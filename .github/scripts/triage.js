@@ -15,7 +15,9 @@ const LABELS = {
   cant: { name: "can't support", color: 'b60205', description: "The device doesn't share its battery level, so it can't be read" },
   board: { name: BOARD_LABEL, color: '5319e7', description: 'The list of requested devices' },
 };
-const NO_ANSWER = /^_?no response_?$|^(unknown|n\/a|none|-|don'?t know|no se|不知道)$/i;
+const NO_ANSWER = /^_?no response_?$|^(unknown|n\/a|none|-|\?+|no se|不知道)$/i;
+// 'don't know' typed any way: dont't, don`t, idk, not sure.
+const NO_IDEA = (t) => /^(i?don?t*know|idk|notsure|nose)$/.test(t.toLowerCase().replace(/[^a-z]/g, ''));
 
 const isDeviceReport = (issue) => /^\[Device\]/i.test(issue.title || '') || (issue.labels || []).some((l) => (l.name || l) === 'device-support');
 
@@ -44,7 +46,7 @@ function parseReport(issue) {
     name: section(body, 'Device').split('\n')[0].trim() || String(issue.title || '').replace(/^\[Device\]\s*/i, ''),
     version,
     captured,
-    hasLevel: !!actual && !NO_ANSWER.test(actual.trim()),
+    hasLevel: !!actual && !NO_ANSWER.test(actual.trim()) && !NO_IDEA(actual),
   };
 }
 

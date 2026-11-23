@@ -26,6 +26,9 @@ test('a report form is read: ids, version, scan data and the real level', () => 
   const good = parseReport({ title: '[Device] x', body: form({ scan: 'Scan 1: 4 messages\nScan 2: 201 messages', actual: '85' }) });
   assert.equal(good.captured, true);
   assert.equal(good.hasLevel, true);
+  for (const actual of ["dont't know", 'don`t know', 'idk', 'Not sure', '?']) {
+    assert.equal(parseReport({ title: '[Device] x', body: form({ actual }) }).hasLevel, false, actual);
+  }
 });
 
 test('versions compare by number', () => {
