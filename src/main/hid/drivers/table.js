@@ -297,7 +297,9 @@ const DEVICES = [
   },
   {
     name: 'Logitech G535', kind: 'headset', vendorId: LOGITECH, productIds: [0x0ac4],
-    channel: { usagePage: 0x0c, usage: 0x01, interface: 3 }, steps: [hidppVoltageStep([0x05, 0x0d], G535_CURVE)],
+    // HeadsetControl writes to the media-key collection, which Windows refused on one PC (issue
+    // #143, "Cannot write to hid device"); the HID++ long collection comes first.
+    channel: [LOGITECH_CHANNEL, { usagePage: 0x0c, usage: 0x01, interface: 3 }], steps: [hidppVoltageStep([0x05, 0x0d], G535_CURVE)],
   },
   {
     name: 'Logitech G PRO', kind: 'headset', vendorId: LOGITECH, productIds: [0x0aa7, 0x0aaa, 0x0aba, 0x0afb, 0x0afc],

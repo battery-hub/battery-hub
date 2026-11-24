@@ -522,3 +522,9 @@ test('the Beken/Xenta receiver broadcast is read, and the link-blink frame is no
   const channels = [{ usagePage: 1, usage: 2, path: 'm' }, { usagePage: 0x0a, path: 'v' }, { usagePage: 0x0b, path: 'w' }];
   assert.equal(detectDriver({ vendorId: 0x1d57, productId: 0xfa60, channels }).id, 'beken');
 });
+
+test('Logitech G535 tries the HID++ collection first, then the media-key one HeadsetControl uses', () => {
+  const g535 = entry(0x046d, 0x0ac4);
+  const channels = [{ usagePage: 0x0c, usage: 1, interface: 3, path: 'media' }, { usagePage: 0xff43, usage: 0x0202, interface: 3, path: 'hidpp' }];
+  assert.deepEqual(channelsFor({ channels }, g535).map((c) => c.path), ['hidpp', 'media']);
+});

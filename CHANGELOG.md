@@ -29,6 +29,11 @@ All notable changes to this project are documented here. Versions follow
   whether the level is right. A yes opens a filled-in GitHub form, which puts the device on the
   Works with list and helps build it in for everyone.
 
+### Fixed
+
+- Logitech G535 (issue #143): "Cannot write to hid device". It is now asked on its HID++ collection
+  first, which Windows lets the app write to.
+
 ### Changed
 
 - The scan now also listens on standard collections that carry no movement or keys. Some receivers
