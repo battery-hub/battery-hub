@@ -182,7 +182,27 @@ const DEVICES = [
     }],
   },
   {
-    name: 'HyperX Cloud II Wireless', kind: 'headset', vendorId: HP, productIds: [0x0696, 0x018b],
+    // From auto94's HyperX-Cloud-2-Battery-Monitor (MainForm.cpp, tested on the Core on Windows):
+    // write 66 89, the reply carries the level at byte 4 (issues #117, #145). The Cloud III answers
+    // on 0xFF13/0x0001; for the Core that project takes the collection with the highest usage.
+    name: 'HyperX Cloud III Wireless', kind: 'headset', vendorId: HP, productIds: [0x05b7, 0x0c9d],
+    channel: { usagePage: 0xff13, usage: 0x01 },
+    steps: [{ request: pad([0x66, 0x89], 52), parse: (f) => (f.length < 5 || f[0] !== 0x66 || f[1] !== 0x89 ? null : f[4] > 100 ? OFFLINE : { capacity: f[4] }) }],
+  },
+  {
+    name: 'HyperX Cloud II Core Wireless', kind: 'headset', vendorId: HP, productIds: [0x0995],
+    steps: [{ request: pad([0x66, 0x89], 52), parse: (f) => (f.length < 5 || f[0] !== 0x66 || f[1] !== 0x89 ? null : f[4] > 100 ? OFFLINE : { capacity: f[4] }) }],
+  },
+  {
+    // Same project: 0c 02 03 01 00 06 on collection 0x01C0/0x0001, level at byte 6, 0xff while off
+    // (issue #33).
+    name: 'HyperX Cloud III S Wireless', kind: 'headset', vendorId: HP, productIds: [0x06be],
+    channel: { usagePage: 0x01c0, usage: 0x01 },
+    steps: [{ request: pad([0x0c, 0x02, 0x03, 0x01, 0x00, 0x06], 52), parse: (f) => (f.length < 7 || f[0] !== 0x0c || f[5] !== 0x06 ? null : f[6] > 100 ? OFFLINE : { capacity: f[6] }) }],
+  },
+  {
+    // 0x0d93 is the Cloud Stinger 2 Wireless, which auto94's HyperX-Cloud-2-Battery-Monitor reads the same way.
+    name: 'HyperX Cloud II Wireless', kind: 'headset', vendorId: HP, productIds: [0x0696, 0x018b, 0x0d93],
     channel: { usagePage: 0xff90, usage: 0x0303, interface: 0 },
     steps: [
       cloud2Step(0x02, (f) => ({ capacity: clampPercent(f[7]) })),

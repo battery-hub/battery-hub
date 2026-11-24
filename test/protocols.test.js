@@ -552,3 +552,16 @@ test('ATK X1 NearLink asks for power info on report 5 and matches the request co
   assert.equal(x1.parse(frame([0x05, 0x02, 0x00, 0x1a, 0, 0, 0, 0, 71, 1])), null);
   assert.equal(x1.parse(frame([0x05, 0x01, 0x00, 0x1a, 0, 0, 0, 0, 0, 0])).offline, true);
 });
+
+test('HyperX Cloud III, Cloud II Core and Cloud III S read the way auto94 documents', () => {
+  const iii = entry(0x03f0, 0x05b7).steps[0];
+  assert.deepEqual(iii.request.slice(0, 3), [0x66, 0x89, 0x00]);
+  assert.equal(iii.request.length, 52);
+  assert.deepEqual(iii.parse(frame([0x66, 0x89, 0, 0, 72])), { capacity: 72 });
+  assert.equal(iii.parse(frame([0x66, 0x0d, 0x0f, 0x53, 0x49])), null);
+  assert.equal(entry(0x03f0, 0x0995).steps[0].parse(frame([0x66, 0x89, 0, 0, 0xff])).offline, true);
+  const s = entry(0x03f0, 0x06be).steps[0];
+  assert.deepEqual(s.parse(frame([0x0c, 0x02, 0x03, 0x01, 0x00, 0x06, 40])), { capacity: 40 });
+  assert.equal(s.parse(frame([0x0c, 0x02, 0x03, 0x01, 0x00, 0x06, 0xff])).offline, true);
+  assert.ok(entry(0x03f0, 0x0d93)); // Cloud Stinger 2 Wireless
+});
