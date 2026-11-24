@@ -55,7 +55,7 @@
 
   function apply(next) {
     lang = next;
-    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
+    document.documentElement.lang = ({ zh: 'zh-CN', pt: 'pt-BR' })[lang] || lang;
     document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
     walk(document.body);
     document.querySelectorAll('template').forEach((t) => walk(t.content));

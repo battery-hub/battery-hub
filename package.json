@@ -49,7 +49,9 @@
       "es-419",
       "zh-CN",
       "zh-TW",
-      "he"
+      "he",
+      "pt-BR",
+      "pt-PT"
     ],
     "win": {
       "target": "nsis",
