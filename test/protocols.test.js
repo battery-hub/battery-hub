@@ -565,3 +565,14 @@ test('HyperX Cloud III, Cloud II Core and Cloud III S read the way auto94 docume
   assert.equal(s.parse(frame([0x0c, 0x02, 0x03, 0x01, 0x00, 0x06, 0xff])).offline, true);
   assert.ok(entry(0x03f0, 0x0d93)); // Cloud Stinger 2 Wireless
 });
+
+test('YJX-chip receivers answer the gmouse battery request on 0xFF01/0x0010', () => {
+  const yjx = require('../src/main/hid/drivers/yjx');
+  assert.deepEqual(yjx.REQUEST.slice(0, 9), [0x00, 0x55, 0x30, 0xa5, 0x0b, 0x2e, 0x01, 0x01, 0x01]);
+  assert.equal(yjx.REQUEST.length, 65);
+  assert.deepEqual(yjx.parseReply([0xaa, 0x30, 0, 0, 0, 0, 0, 0, 70, 1]), { capacity: 70, charging: true });
+  assert.equal(yjx.parseReply([0xaa, 0xfa, 0, 0, 0, 0, 0, 0, 70, 1]), null);
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  assert.equal(detectDriver({ vendorId: 0xa8a5, productId: 0x2255, channels: [ch(1, 2), ch(0xffa5, 0x88), ch(0xff01, 0x10)] }).id, 'yjx');
+  assert.equal(detectDriver({ vendorId: 0x249a, productId: 0x5c2f, channels: [ch(1, 2), ch(0xff01, 0x10)] }).id, 'yjx');
+});

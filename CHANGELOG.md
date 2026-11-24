@@ -24,6 +24,8 @@ All notable changes to this project are documented here. Versions follow
   NearLink (issue #129), read from ATK's own web driver.
 - HyperX Cloud III Wireless, Cloud III S Wireless, Cloud II Core Wireless and Cloud Stinger 2 Wireless
   (issues #33, #117, #145), from auto94's HyperX-Cloud-2-Battery-Monitor.
+- Mice on YJX-chip receivers (issues #85, #112, #157), read the way MCHOSE's web driver reads its
+  G-series mice on the same platform.
 - Corsair Slipstream receiver (issue #46), for the mouse or keyboard paired with it.
 - Mice on the same Compx receiver chip as VXE: ATK, MADLIONS and other Compx receivers (issues #6,
   #61, #82, #92, #98, #111, #114, #121, #126, #135, #136). Linux reads one of them (373b:1085) the
