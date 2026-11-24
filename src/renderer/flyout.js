@@ -45,7 +45,8 @@ function row(d, n) {
   const pct = document.createElement('div');
   pct.className = 'pct';
   pct.textContent = known ? `${d.capacity}%` : 'Off';
-  if (off && known) el.title = `${d.offLabel || 'Not connected'}: last reading ${d.capacity}%`;
+  // Why it's greyed out. Only the reason, an existing translated text: the number is beside it.
+  if (off && known) el.title = d.offLabel || 'Not connected';
   el.append(icon, body, pct);
   return el;
 }
