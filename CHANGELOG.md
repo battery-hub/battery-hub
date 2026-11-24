@@ -12,6 +12,9 @@ All notable changes to this project are documented here. Versions follow
   (issues #97, #99, #100), using the protocol HeadsetControl documents.
 - MCHOSE V9 PRO (issue #43), Astro A50 Gen 4 (issue #35) and Astro A50 Gen 5 (issue #53) headsets,
   also from HeadsetControl.
+- MCHOSE mice: A7 V2 Ultra, A5 Ultra, K7 Ultra and A7 Ultra (issues #54, #68, #77, #80, #130, #142,
+  #161), and MCHOSE G75 V2, G87 V2, K87S and K99 V3 keyboards on their 2.4G receiver (issue #50).
+  Both protocols are read from MCHOSE's own web driver.
 - Corsair Slipstream receiver (issue #46), for the mouse or keyboard paired with it.
 - Mice on the same Compx receiver chip as VXE: ATK, MADLIONS and other Compx receivers (issues #6,
   #61, #82, #92, #98, #111, #114, #121, #126, #135, #136). Linux reads one of them (373b:1085) the

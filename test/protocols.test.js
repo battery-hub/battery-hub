@@ -458,3 +458,37 @@ test('mice on the Compx receiver chip use the VXE protocol, other chips with the
   assert.equal(detectDriver(device(0x3554, 0xf58a, [ch(0xff02, 2)])).id, 'kysona');
   assert.equal(detectDriver(device(0x3554, 0xfa09, compxLayout)).id, 'compx');
 });
+
+test('MCHOSE 2.4G keyboards read the base info block, on the collection with no usage', () => {
+  const kb = entry(0x3837, 0x3033);
+  const step = kb.steps[0];
+  assert.deepEqual(step.request.slice(0, 9), [0x00, 0x55, 0x04, 0x00, 0x38, 0x38, 0x00, 0x00, 0x00]);
+  assert.equal(step.request.length, 65);
+  const reply = (b) => { const f = new Array(64).fill(0); f[0] = 0xaa; f[1] = 0x04; f[4] = 56; f[40] = b; return f; };
+  assert.deepEqual(step.parse(reply(73)), { capacity: 73, charging: false });
+  assert.deepEqual(step.parse(reply(0x80 | 40)), { capacity: 40, charging: true });
+  assert.equal(step.parse([0xaa, 0x05, 0, 0, 56, 0, 0, ...new Array(57).fill(0)]), null);
+  const channels = [{ usagePage: 1, usage: 6, path: 'kbd' }, { usagePage: 1, path: 'cmd' }, { usagePage: 0xff31, usage: 0x74, path: 'v' }];
+  assert.deepEqual(channelsFor({ channels }, kb).map((c) => c.path), ['cmd']);
+});
+
+test('MCHOSE mice: the read-device request is inverted, and the level comes back inverted', () => {
+  const mouse = require('../src/main/hid/drivers/mchose-mouse');
+  const req = mouse.request();
+  assert.equal(req[0], 0x11);
+  assert.equal(req[1], 0x06 ^ 0xff);
+  assert.ok(req.slice(2).every((b) => b === 0xff));
+  assert.equal(req.length, 21);
+  // vid 3837, pid 100b, firmware, link byte, level 62, charging
+  const data = [0x37, 0x38, 0x0b, 0x10, 1, 2, 3, 4, 0x30, 62, 1, ...new Array(9).fill(0)];
+  const raw = [0x11, 0x06 ^ 0xff, ...data.map((b) => b ^ 0xff)];
+  assert.deepEqual(mouse.parseReply(raw), { capacity: 62, charging: true });
+  raw[2 + 9] = 0 ^ 0xff;
+  assert.equal(mouse.parseReply(raw).offline, true);
+  assert.equal(mouse.parseReply([0x11, 0x04 ^ 0xff, ...data]), null); // another command's answer
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  const device = (vendorId, productId) => ({ vendorId, productId, channels: [ch(1, 2), ch(0xff0b, 0x104), ch(0xff01, 1)] });
+  assert.equal(detectDriver(device(0x3837, 0x100b)).id, 'mchose-mouse');
+  assert.equal(detectDriver(device(0x5253, 0x1021)).id, 'mchose-mouse');
+  assert.notEqual((detectDriver(device(0x3837, 0x3033)) || {}).id, 'mchose-mouse');
+});

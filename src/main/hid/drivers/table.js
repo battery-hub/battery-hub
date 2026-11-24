@@ -265,6 +265,20 @@ const DEVICES = [
     }],
   },
   {
+    // MCHOSE keyboards on the 3837:3033 2.4G receiver (G75 V2, G87 V2, K87S, K99 V3; issue #50).
+    // From MCHOSE's own web driver (mchose.com.cn, the "glw" family): an unnumbered 64-byte report
+    // on the collection with no usage, 55 <command> 00 <sum of the next four> <size> <offset lo hi>
+    // 00. Command 4 reads the base info; the reply starts aa 04, and its byte 32 (40 in the frame)
+    // holds the level in the low 7 bits and charging in the top bit.
+    name: 'MCHOSE G75 V2, G87 V2, K87S, K99 V3 (2.4G)', kind: 'keyboard', vendorId: 0x3837, productIds: [0x3033],
+    channel: { usagePage: 0x01, usage: null },
+    steps: [{
+      request: pad([0x00, 0x55, 0x04, 0x00, 0x38, 0x38, 0x00, 0x00, 0x00], 65),
+      parse: (f) => (f.length < 41 || f[0] !== 0xaa || f[1] !== 0x04 || f[5] !== 0 || f[6] !== 0 ? null
+        : (f[40] & 0x7f) === 0 ? null : { capacity: clampPercent(f[40] & 0x7f), charging: !!(f[40] & 0x80) }),
+    }],
+  },
+  {
     // The X9's protocol behind a C-Media dongle (HeadsetControl mchose_v9_pro, issue #43).
     name: 'MCHOSE V9 PRO', kind: 'headset', vendorId: 0x291d, productIds: [0x385d],
     channel: { usagePage: 0xff90 },

@@ -6,8 +6,9 @@ const table = require('./table');
 function channelsFor(logicalDevice, entry) {
   const rule = entry.channel;
   if (!rule) return logicalDevice.channels.filter((c) => c.usagePage >= 0xff00);
+  // usage: null asks for the collection Windows gives no usage for.
   return logicalDevice.channels.filter((c) => (rule.usagePage === undefined || c.usagePage === rule.usagePage)
-    && (rule.usage === undefined || c.usage === rule.usage)
+    && (rule.usage === undefined || (rule.usage === null ? c.usage == null : c.usage === rule.usage))
     && (rule.interface === undefined || c.interface === rule.interface));
 }
 
