@@ -8,6 +8,9 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Corsair Void Wireless v2, HS80 MAX, Virtuoso MAX, Virtuoso SE and Virtuoso XT headsets
+  (issues #97, #99, #100), using the protocol HeadsetControl documents.
+
 - "It works! Let the developer know": a device you set up with the scan that reads fine asks
   whether the level is right. A yes opens a filled-in GitHub form, which puts the device on the
   Works with list and helps build it in for everyone.

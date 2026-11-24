@@ -412,3 +412,22 @@ test('the Compx keyboard receiver gets its own driver, not the Kysona mouse one'
   const vxe = { vendorId: 0x3554, productId: 0xf58a, channels: [{ usagePage: 0xff02, usage: 2 }] };
   assert.equal(detectDriver(vxe).id, 'kysona');
 });
+
+test('Corsair Bragi headsets read the battery in tenths, and know a missing headset', () => {
+  const steps = entry(0x1b1c, 0x2a08).steps;
+  assert.equal(entry(0x1b1c, 0x0a97), entry(0x1b1c, 0x2a08));
+  const battery = steps[steps.length - 1];
+  assert.deepEqual(battery.request.slice(0, 6), [0x00, 0x02, 0x09, 0x02, 0x0f, 0x00]);
+  assert.equal(battery.request.length, 65);
+  assert.deepEqual(battery.parse(frame([0x01, 0x01, 0x02, 0x00, 0x52, 0x03])), { capacity: 85 }); // 850 tenths
+  assert.equal(battery.parse(frame([0x01, 0x01, 0x02, 0x00, 0x1c, 0x1b])), null); // someone else's answer
+  assert.equal(battery.parse(frame([0x01, 0x00, 0x02, 0x05, 0x00, 0x00])).offline, true);
+  assert.equal(battery.parse(frame([0x01, 0x01, 0x06, 0x00, 0x00, 0x00])), null); // a status push
+  // The wake-up asks the receiver first, so a receiver reply is accepted there and not for the headset.
+  assert.deepEqual(steps[0].parse(frame([0x01, 0x00, 0x02, 0x00, 0x13, 0x01])), {});
+  assert.equal(steps[2].parse(frame([0x01, 0x00, 0x02, 0x00, 0x13, 0x01])), null);
+  const se = entry(0x1b1c, 0x0a40).steps[0];
+  assert.deepEqual(se.request.slice(0, 5), [0x02, 0x09, 0x02, 0x0f, 0x00]);
+  assert.equal(se.request.length, 64);
+  assert.deepEqual(se.parse(frame([0x01, 0x01, 0x02, 0x00, 0x5a, 0x00])), { capacity: 9 });
+});

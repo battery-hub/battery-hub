@@ -72,6 +72,30 @@ function cloud2Step(command, parse) {
   };
 }
 
+// ---- Corsair "Bragi" headsets: properties read with GET, from HeadsetControl's corsair_void_v2w
+// and corsair_virtuoso_xt. A request goes to 0x08 (the receiver) or 0x09 (the headset behind it).
+// Replies: [0] 0x01, [1] 0x00 receiver / 0x01 headset, [2] command echo, [3] status, [4..5] value.
+// Status 0x05 ("no such property") is the receiver answering for a headset that isn't there.
+// The battery is property 0x0f, in tenths of a percent. The reply doesn't repeat the property, so
+// a value outside 1-1000 (another program's answer) is skipped, as HeadsetControl does.
+const BRAGI_RECEIVER = 0x08;
+const BRAGI_HEADSET = 0x09;
+const BRAGI_GET = 0x02;
+
+function bragiStep(prefix, target, property, parse) {
+  const unnumbered = prefix.length > 0; // the newer receivers take a 65-byte write with a leading 0
+  return {
+    request: pad([...prefix, 0x02, target, BRAGI_GET, property, 0x00], unnumbered ? 65 : 64),
+    parse(f) {
+      if (f.length < 6 || f[0] !== 0x01 || f[2] !== BRAGI_GET) return null;
+      if (f[1] !== (target === BRAGI_HEADSET ? 0x01 : 0x00)) return f[3] === 0x05 ? OFFLINE : null;
+      if (f[3] === 0x05) return OFFLINE;
+      return f[3] === 0x00 ? parse(f[4] | (f[5] << 8)) : null;
+    },
+  };
+}
+const bragiBattery = (value) => (value >= 1 && value <= 1000 ? { capacity: clampPercent(Math.round(value / 10)) } : null);
+
 function alphaStep(command, parse) {
   return {
     request: pad([0x21, 0xbb, command], 31),
@@ -164,6 +188,27 @@ const DEVICES = [
       cloud2Step(0x02, (f) => ({ capacity: clampPercent(f[7]) })),
       cloud2Step(0x03, (f) => ({ charging: f[4] === 1 })),
     ],
+  },
+  {
+    // Woken the way HeadsetControl does it without switching to software mode (which pops in the
+    // headset): the receiver's firmware and a heartbeat, then a heartbeat to the headset.
+    name: 'Corsair Void Wireless v2, HS80 MAX, Virtuoso MAX', kind: 'headset', vendorId: 0x1b1c,
+    productIds: [0x2a08, 0x0a97, 0x2a02],
+    channel: { usagePage: 0xff42 },
+    steps: [
+      bragiStep([0x00], BRAGI_RECEIVER, 0x13, () => ({})),
+      bragiStep([0x00], BRAGI_RECEIVER, 0x12, () => ({})),
+      bragiStep([0x00], BRAGI_HEADSET, 0x12, () => ({})),
+      bragiStep([0x00], BRAGI_HEADSET, 0x0f, bragiBattery),
+    ],
+  },
+  {
+    // 0x0a40 is a Virtuoso SE receiver HeadsetControl doesn't list yet (issue #99); its scan shows
+    // the same Bragi replies.
+    name: 'Corsair Virtuoso SE and XT', kind: 'headset', vendorId: 0x1b1c,
+    productIds: [0x0a3e, 0x0a3d, 0x0a40, 0x0a64],
+    channel: { usagePage: 0xff42, usage: 0x01 },
+    steps: [bragiStep([], BRAGI_HEADSET, 0x0f, bragiBattery)],
   },
   {
     name: 'Corsair Void and Virtuoso', kind: 'headset', vendorId: 0x1b1c,

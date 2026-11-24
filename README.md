@@ -100,7 +100,7 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | Razer | 81 wireless mice and keyboards |
 | SteelSeries | Arctis 1, 7, 7+, 9, Nova 3P, Nova 5, Nova 7, Nova Pro Wireless headsets; Aerox, Prime and Rival 3 Wireless mice |
 | HyperX | Cloud Alpha Wireless, Cloud Flight, Cloud II Wireless |
-| Corsair | Void and Virtuoso headsets |
+| Corsair | Void, Void Wireless v2, HS80 MAX, Virtuoso, Virtuoso SE, XT and MAX headsets |
 | Audeze | Maxwell, Maxwell 2 |
 | MCHOSE | V9 Turbo+, X9 |
 | VXE, ATK | Dragonfly R1 Pro, NordicMouse and other Kysona-based mice |
