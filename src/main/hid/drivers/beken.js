@@ -22,7 +22,8 @@ function matches(logicalDevice) {
 }
 
 function parseFrame(f) {
-  if (f.length < 5 || f[0] !== 0x03 || f[1] !== 0xe5 || f[2] !== 0x40 || f[4] > 100) return null;
+  // Some receivers (an Attack Shark X11 here) send 03 55 40 instead of 03 e5 40, same layout.
+  if (f.length < 5 || f[0] !== 0x03 || (f[1] !== 0xe5 && f[1] !== 0x55) || f[2] !== 0x40 || f[4] > 100) return null;
   return { capacity: f[4], charging: f[3] === 0x03 };
 }
 
