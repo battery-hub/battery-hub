@@ -109,6 +109,7 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X and other LAMZU mice |
 | Beken/Xenta 2.4G receiver | Attack Shark and other mice on 1d57:fa60 and fa55 |
 | Keychron, SKN | Mice on the Ultra-Link 8K receiver |
+| YJX-chip 2.4G receiver | AJAZZ, XCTECH and other mice on YJX receivers (the same platform as MCHOSE G-series mice) |
 | Compx 2.4G receiver | AULA F87 Pro and F99 Pro, Lingbao K98, MCHOSE G75 keyboards |
 
 Tested on real hardware: VXE NordicMouse, MCHOSE V9 Turbo+, DualSense on USB and Bluetooth, Logitech MX Master 4 over Bluetooth, and INZONE Buds on their USB dongle. The rest are built from the protocols documented by the projects below and checked against those byte layouts, so please [report a device](https://github.com/battery-hub/battery-hub/issues/new?template=device-support.yml) if one misbehaves.
