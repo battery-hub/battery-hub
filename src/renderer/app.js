@@ -550,9 +550,20 @@ async function runCapture() {
         <span>Turn your device off and on now</span>
       </div>
       <div class="scan-progress"><div class="scan-bar" id="scan-bar"></div></div>
-      <div class="scan-remaining"><span id="scan-timer">${SCAN_SECONDS}</span>s remaining</div>
+      <div class="scan-foot">
+        <div class="scan-remaining"><span id="scan-timer">${SCAN_SECONDS}</span>s remaining</div>
+        <button class="btn btn-ghost" id="cancel-capture-btn">Cancel</button>
+      </div>
     </div>
   `;
+  let cancelled = false;
+  const cancelBtn = document.getElementById('cancel-capture-btn');
+  cancelBtn.addEventListener('click', () => {
+    cancelled = true;
+    cancelBtn.disabled = true;
+    cancelBtn.textContent = 'Cancelling…';
+    window.batteryHub.cancelCapture().catch(() => {});
+  });
   const bar = document.getElementById('scan-bar');
   const timerEl = document.getElementById('scan-timer');
   const startedAt = Date.now();
@@ -578,6 +589,12 @@ async function runCapture() {
 
   clearInterval(ticker);
   btn.disabled = false;
+  if (cancelled) {
+    // Nothing is shown or reported from a scan the user stopped: it may have missed the frame.
+    btn.textContent = 'Start scan';
+    results.innerHTML = '<div class="step-card"><div class="step-desc">Scan cancelled.</div></div>';
+    return;
+  }
   btn.textContent = 'Scan again';
   state.calibration.frames = frames;
   renderCaptureResults();
