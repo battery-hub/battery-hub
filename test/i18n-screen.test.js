@@ -71,7 +71,7 @@ test('the HTML the scripts build has a Portuguese translation for each of its te
   let seen = 0;
   for (const f of SCRIPTS) {
     const parts = literals(withoutComments(read(f)))
-      .filter(({ template, text }) => template && text.includes('<'))
+      .filter(({ text }) => /<[a-z/]/i.test(text)) // HTML with tags, in any kind of quotes
       .flatMap(({ text }) => htmlTexts(text));
     seen += parts.length;
     // A text with a value in it is a pattern: the examples below stand in for them.
