@@ -75,16 +75,23 @@ test('every language has the same keys', () => {
   const keys = (l) => Object.keys(BH_STRINGS[l]).sort().join('|');
   assert.equal(keys('es'), keys('zh'));
   assert.equal(keys('es'), keys('he'));
-  assert.equal(keys('es'), keys('pt'));
+  const missing = Object.keys(BH_STRINGS.es).filter((k) => !(k in BH_STRINGS.pt));
+  assert.deepEqual(missing, [], 'Portuguese has every text the others have (it may also have more: the Help panel)');
 });
 
-test('every language but English has a table, duration units and a form of every pattern', () => {
+test('every language but English has a table and duration units; every pattern has Portuguese', () => {
   for (const lang of BH_LANGS.filter((l) => l !== 'en')) {
     assert.ok(BH_STRINGS[lang], `${lang} has a table`);
     assert.ok(UNITS[lang], `${lang} has duration units`);
     for (const unit of ['d', 'h', 'm', 's']) assert.ok(UNITS[lang][unit], `${lang} has a unit for ${unit}`);
-    for (const [re, forms] of PATTERNS) assert.equal(typeof forms[lang], 'function', `${lang} has a form of ${re}`);
   }
+  for (const [re, forms] of PATTERNS) assert.equal(typeof forms.pt, 'function', `pt has a form of ${re}`);
+});
+
+test('es, zh and he cover the same patterns', () => {
+  const covered = (lang) => PATTERNS.filter(([, forms]) => forms[lang]).map(([re]) => String(re)).join('|');
+  assert.equal(covered('es'), covered('zh'));
+  assert.equal(covered('es'), covered('he'));
 });
 
 test('every language in the settings list is one the app knows', () => {

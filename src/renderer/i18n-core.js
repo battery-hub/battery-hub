@@ -27,6 +27,14 @@ function duration(text, lang) {
   return text.replace(/(\d+)([dhms])\b/g, (all, n, unit) => n + UNITS[lang][unit]);
 }
 
+// "just now", "5 min ago", "3 h ago", "4 days ago": how diagnostics.js says when a device was last read.
+function checkAgo(text) {
+  if (text === 'just now') return 'agora mesmo';
+  const m = text.match(/^(\d+) (min|h|days) ago$/);
+  if (!m) return text;
+  return `há ${m[1]} ${m[2] === 'days' ? (m[1] === '1' ? 'dia' : 'dias') : m[2]}`;
+}
+
 // [pattern, { lang: (match) => text }]
 const PATTERNS = [
   [/^Updated (\d+[dhms]) ago$/, {
@@ -112,6 +120,32 @@ const PATTERNS = [
     zh: (m) => `${m[1]} 已充满（${m[2]}%）。`,
     he: (m) => `${m[1]} טעון (${m[2]}%).`,
     pt: (m) => `Carga completa: ${m[1]} (${m[2]}%).`,
+  }],
+  // The check in Settings > Help (diagnostics.js). Only Portuguese has these so far: the others
+  // show the English until someone translates them.
+  [/^All (\d+) files match what was shipped\.$/, { pt: (m) => `Todos os ${m[1]} arquivos são iguais aos do pacote original.` }],
+  [/^(\d+) of (\d+) files are missing or changed\.$/, { pt: (m) => `${m[1]} de ${m[2]} arquivos estão ausentes ou alterados.` }],
+  [/^You have (\S+), the latest version\.$/, { pt: (m) => `Você tem a ${m[1]}, a versão mais recente.` }],
+  [/^You have (\S+)\. The latest is (\S+)\.$/, { pt: (m) => `Você tem a ${m[1]}. A mais recente é a ${m[2]}.` }],
+  [/^You have (\S+)\. Couldn't reach GitHub to compare\.$/, { pt: (m) => `Você tem a ${m[1]}. Não foi possível acessar o GitHub para comparar.` }],
+  [/^Working: found (\d+) devices? in (\d+) ms\.$/, {
+    pt: (m) => `Funcionando: ${m[1] === '1' ? '1 dispositivo encontrado' : `${m[1]} dispositivos encontrados`} em ${m[2]} ms.`,
+  }],
+  [/^Working: Windows has a battery reading for (\d+) devices?\.$/, {
+    pt: (m) => `Funcionando: o Windows tem leitura de bateria de ${m[1] === '1' ? '1 dispositivo' : `${m[1]} dispositivos`}.`,
+  }],
+  [/^(\d+) in the last week\.$/, { pt: (m) => `${m[1]} na última semana.` }],
+  [/^Last read (.+)\.$/, { pt: (m) => `Última leitura ${checkAgo(m[1])}.` }],
+  [/^Didn't answer, so it may be asleep\. Last read (.+)\.$/, {
+    pt: (m) => `Não respondeu, então pode estar em repouso. Última leitura ${checkAgo(m[1])}.`,
+  }],
+  [/^Can't read it: (.+)$/, { pt: (m) => `Não foi possível ler: ${m[1]}` }],
+  [/^The check couldn't finish: (.+)$/, { pt: (m) => `A verificação não pôde terminar: ${m[1]}` }],
+  [/^(Opens GitHub with the report filled in|Your browser opened with the report filled in)\. Nothing is posted until you submit it there\. You need a free GitHub account\. Issues are public, so your user name, device serials and Bluetooth details are left out\.( This report is too long for a link, so the full version is also copied for you to paste in\.)?$/, {
+    pt: (m) => (m[1].startsWith('Opens') ? 'Abre o GitHub com o relatório preenchido.' : 'O navegador abriu com o relatório preenchido.')
+      + ' Nada é publicado até você enviá-lo lá. Você precisa de uma conta gratuita no GitHub.'
+      + ' As issues são públicas, por isso seu nome de usuário, os números de série dos dispositivos e os dados de Bluetooth ficam de fora.'
+      + (m[2] ? ' Este relatório é grande demais para um link, então a versão completa também foi copiada para você colar.' : ''),
   }],
 ];
 
