@@ -21,6 +21,7 @@ All notable changes to this project are documented here. Versions follow
   (issue #175, pull request #176 by @maxeinstein-dev), and the X11 receiver 1d57:fa55 (issue #88).
 - Classic Bluetooth headsets whose battery Windows keeps on the Hands-Free service now show up
   (pull request #177 by @maxeinstein-dev).
+- The Rescan button in Add device now spins while it looks for devices.
 - "Open at startup" when the app runs from source (pull request #178 by @maxeinstein-dev).
 
 ## [2.0.5] - 2026-11-24

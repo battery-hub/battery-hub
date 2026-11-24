@@ -508,7 +508,21 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-document.getElementById('rescan-btn').addEventListener('click', refreshDiscover);
+// The icon turns while the list is fetched, at least long enough to be seen.
+async function triggerRescan() {
+  const btn = document.getElementById('rescan-btn');
+  if (btn.classList.contains('spinning')) return;
+  btn.classList.add('spinning');
+  const shown = new Promise((r) => setTimeout(r, 600));
+  try {
+    await refreshDiscover();
+  } finally {
+    await shown;
+    btn.classList.remove('spinning');
+  }
+}
+
+document.getElementById('rescan-btn').addEventListener('click', triggerRescan);
 
 // ---------- calibration wizard ----------
 

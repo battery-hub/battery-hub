@@ -812,7 +812,8 @@ body.reduce-motion *::after {
   transition-delay: 0ms !important;
   scroll-behavior: auto !important;
 }
-body.reduce-motion .spinner { animation-duration: 0.7s !important; animation-iteration-count: infinite !important; }
+body.reduce-motion .spinner,
+body.reduce-motion .btn.spinning .refresh-icon { animation-duration: 0.7s !important; animation-iteration-count: infinite !important; }
 /* drop hover/press transforms so nothing jumps without easing */
 body.reduce-motion .btn:hover,
 body.reduce-motion .btn:active,
