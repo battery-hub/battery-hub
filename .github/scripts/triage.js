@@ -1,5 +1,5 @@
 // The issue bot (see .github/workflows/triage.yml). On every new device report it:
-//   - labels it: good report (the scan caught something and the real level is given), no data,
+//   - labels it: good report (the scan's bytes and the real level are given), no data,
 //     or old version
 //   - closes it if the same hardware was already reported, pointing to that report
 //   - keeps the "Most requested devices" issue up to date, so the most wanted devices are clear
@@ -41,11 +41,14 @@ function parseReport(issue) {
   const actual = section(body, 'Actual battery level during the scan');
   const version = (section(body, 'Battery Hub version').match(/\d+\.\d+\.\d+/) || [])[0] || null;
   const captured = /^Scan \d+: \d+ messages?$/m.test(scan) || /^Feature reports:/m.test(scan) || /report \d+, seen \d+x/.test(scan);
+  // The bytes a battery is decoded from. Before 2.0.5 reports often held only message counts.
+  const bytes = /report \d+, seen \d+x: [0-9a-fx]{2,}/i.test(scan);
   return {
     hardware: hardwareOf(section(body, 'Vendor / Product ID') || body),
     name: section(body, 'Device').split('\n')[0].trim() || String(issue.title || '').replace(/^\[Device\]\s*/i, ''),
     version,
     captured,
+    bytes,
     hasLevel: !!actual && !NO_ANSWER.test(actual.trim()) && !NO_IDEA(actual),
   };
 }
@@ -79,7 +82,7 @@ function decide(report, others, latest) {
     labels.push(LABELS.old.name, 'needs info');
     return { labels, close: false, comment: `Thanks! This was sent from Battery Hub ${report.version}, and the latest is ${latest.replace(/^v/, '')}. Please update (Settings → Check for updates), run the scan again and post the new result here: it may already be fixed.` };
   }
-  if (report.captured && report.hasLevel) labels.push(LABELS.good.name);
+  if (report.bytes && report.hasLevel) labels.push(LABELS.good.name);
   else if (!report.captured) {
     labels.push(LABELS.noData.name, 'needs info');
     return { labels, close: false, comment: "Thanks! The scan didn't catch anything from this device yet. Please make sure it's on and awake, turn it off and on while the scan runs, and post the new result. If it also has Bluetooth, try connecting that way: Battery Hub reads Bluetooth batteries. If you know an app that shows its battery, tell me which." };

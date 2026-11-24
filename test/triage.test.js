@@ -22,10 +22,11 @@ test('hardware ids are read in every way people write them', () => {
 
 test('a report form is read: ids, version, scan data and the real level', () => {
   const empty = parseReport({ title: '[Device] Fuxi-H3', body: form() });
-  assert.deepEqual(empty, { hardware: '040B:0897', name: 'XiiSound Fuxi-H3', version: '2.0.3', captured: false, hasLevel: false });
-  const good = parseReport({ title: '[Device] x', body: form({ scan: 'Scan 1: 4 messages\nScan 2: 201 messages', actual: '85' }) });
+  assert.deepEqual(empty, { hardware: '040B:0897', name: 'XiiSound Fuxi-H3', version: '2.0.3', captured: false, bytes: false, hasLevel: false });
+  const good = parseReport({ title: '[Device] x', body: form({ scan: 'Scan 1: 4 messages\nff00:0001 report 5, seen 3x: 05550100', actual: '85' }) });
   assert.equal(good.captured, true);
   assert.equal(good.hasLevel, true);
+  assert.equal(good.bytes, true);
   for (const actual of ["dont't know", 'don`t know', 'idk', 'Not sure', '?']) {
     assert.equal(parseReport({ title: '[Device] x', body: form({ actual }) }).hasLevel, false, actual);
   }
@@ -55,8 +56,10 @@ test('an old version is asked to update; an empty scan gets tips; a full one is 
   const empty = decide(parseReport({ title: '[Device] x', body: form() }), [], 'v2.0.3');
   assert.deepEqual(empty.labels, ['no data', 'needs info']);
   assert.match(empty.comment, /turn it off and on/);
-  const good = decide(parseReport({ title: '[Device] x', body: form({ scan: 'Scan 1: 4 messages', actual: '62%' }) }), [], 'v2.0.3');
+  const good = decide(parseReport({ title: '[Device] x', body: form({ scan: 'Scan 1: 4 messages\nff00:0001 feature report 9, seen 2x: xxxxxxxxxxxx3e', actual: '62%' }) }), [], 'v2.0.3');
   assert.deepEqual([good.labels, good.comment], [['good report'], null]);
+  const countsOnly = decide(parseReport({ title: '[Device] x', body: form({ scan: 'Scan 1: 4 messages', actual: '62%' }) }), [], 'v2.0.3');
+  assert.deepEqual([countsOnly.labels, countsOnly.close], [[], false]);
 });
 
 test('the device list counts people and votes, links one main report, and keeps closed devices apart', () => {

@@ -6,6 +6,12 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Changed
+
+- Device reports now include the bytes the scan caught, which is what a battery gets decoded from.
+  Before, most only said how many messages came in. A keyboard's typing stays out, and anything
+  that looks like an address or serial is masked.
+
 ## [2.0.4] - 2026-11-22
 
 ### Added
