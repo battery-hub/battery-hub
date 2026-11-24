@@ -188,6 +188,18 @@ const DEVICES = [
     }],
   },
   {
+    // Issue #180. From windows-taskbar-battery PR #2 (tested on Windows against NGENUITY's level)
+    // and nogenuity's classic.rs, which send the same bytes: report 06 with BB 02 at bytes 14-15;
+    // the answer (report 0x0b, as the #180 scan saw on ff13) echoes BB 02 at bytes 2-3, level at 7.
+    name: 'HyperX Cloud Flight S', kind: 'headset', vendorId: KINGSTON, productIds: [0x16ea, 0x16eb],
+    channel: { usagePage: 0xff13, usage: 0x01 },
+    steps: [{
+      request: pad([0x06, 0x00, 0x02, 0x00, 0x9a, 0x00, 0x00, 0x68, 0x4a, 0x8e, 0x0a, 0x00, 0x00, 0x00, 0xbb, 0x02], 62),
+      parse: (f) => (f.length < 8 || f[0] === 0x0a || f[2] !== 0xbb || f[3] !== 0x02 ? null
+        : f[7] === 0 || f[7] > 100 ? OFFLINE : { capacity: f[7] }),
+    }],
+  },
+  {
     // From auto94's HyperX-Cloud-2-Battery-Monitor (MainForm.cpp, tested on the Core on Windows):
     // write 66 89, the reply carries the level at byte 4 (issues #117, #145). The Cloud III answers
     // on 0xFF13/0x0001; for the Core that project takes the collection with the highest usage.

@@ -685,6 +685,16 @@ test('ATK Holtek receivers answer get-config 82 with level | charging at byte 8'
   assert.equal(detectDriver(nano).id, 'atkHoltek');
 });
 
+test('HyperX Cloud Flight S asks BB 02 and reads byte 7 of the echo', () => {
+  const step = entry(0x0951, 0x16ea).steps[0];
+  assert.deepEqual(step.request.slice(0, 17), [0x06, 0x00, 0x02, 0x00, 0x9a, 0x00, 0x00, 0x68, 0x4a, 0x8e, 0x0a, 0x00, 0x00, 0x00, 0xbb, 0x02, 0x00]);
+  assert.equal(step.request.length, 62);
+  assert.deepEqual(step.parse(frame([0x0b, 0, 0xbb, 0x02, 0, 0, 0, 73])), { capacity: 73 });
+  assert.equal(step.parse(frame([0x0b, 0, 0xbb, 0x03, 1, 0, 0, 0])), null);
+  assert.equal(step.parse(frame([0x0a, 0, 0xbb, 0x02, 0, 0, 0, 73])), null);
+  assert.equal(step.parse(frame([0x0b, 0, 0xbb, 0x02, 0, 0, 0, 0])).offline, true);
+});
+
 test('Razer BlackShark V3 asks class 0x21 with the XOR byte and reads byte 13', () => {
   const step = entry(0x1532, 0x0577).steps[0];
   assert.deepEqual(step.request.slice(0, 11), [0x02, 0x00, 0x60, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x80, 0x21]);

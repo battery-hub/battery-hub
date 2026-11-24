@@ -10,6 +10,7 @@ All notable changes to this project are documented here. Versions follow
 
 - Mice on the Keychron / SKN Ultra-Link 8K receiver (issue #164), using the request that
   keychron-battery-dkms and HaloBattery checked on a Keychron M6 8K.
+- HyperX Cloud Flight S (issue #180): the headset is asked for its level the way NGENUITY does, so it no longer shows 0%.
 - Razer BlackShark V3 and V3 Pro, on the cable and the dongle (issue #21), from openrazer, secbird
   and Joule, which checked it on both headsets.
 - The ATK 8K Nano Dongle and ATK 1K/8K dongles on the Holtek platform (issue #168), read the way
