@@ -390,6 +390,30 @@ async function deviceReport(deps, request, live) {
   };
 }
 
+// "It works": a device set up with the scan reads right. The profile says exactly where its
+// battery is, so it can be built in for everyone, and the device goes on the Works with list.
+// Nothing here is checked first: the person is only confirming what they see.
+function worksReport(deps, request, live) {
+  const facts = deviceFacts(request, live);
+  const [vendor, product] = facts.hardware.toUpperCase().split(':');
+  const p = request.profile || {};
+  const how = request.profile
+    ? `${p.reportKind} report ${p.reportId} on ${hex4(p.usagePage)}:${hex4(p.usage ?? 0)}, byte ${p.byteOffset} of ${p.readLength}, ${p.scaleMin}-${p.scaleMax} is 0-100%`
+    : `driver ${facts.driver}`;
+  const level = Number.isFinite(request.capacity) ? `${request.capacity}%` : 'unknown';
+  return {
+    hardware: product ? `${vendor}:${product}` : null,
+    ...issueLink('works.yml', {
+      title: `[Works] ${facts.product}`,
+      device: [facts.manufacturer, facts.product].filter(Boolean).join(' '),
+      connection: facts.connection,
+      ids: product ? `VID_${vendor} / PID_${product}` : facts.hardware,
+      how: sanitize(`${how}\nBattery Hub shows: ${level}`),
+      version: deps.version,
+    }),
+  };
+}
+
 async function fetchLatestVersion(fetcher) {
   const response = await fetcher(LATEST_RELEASE, { headers: { 'User-Agent': 'Battery-Hub', Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(NETWORK_TIMEOUT_MS) });
   if (!response.ok) throw new Error(`status ${response.status}`);
@@ -417,4 +441,4 @@ async function runChecks(deps) {
   return { checks: shown, verdict, report, ...requestUrl(report) };
 }
 
-module.exports = { runChecks, deviceReport, isExpectedFailure, verdictOf, formatReport, requestUrl, sanitize, isNewer, checkDevice, checkPython, readLog, checkPackage };
+module.exports = { runChecks, deviceReport, worksReport, isExpectedFailure, verdictOf, formatReport, requestUrl, sanitize, isNewer, checkDevice, checkPython, readLog, checkPackage };

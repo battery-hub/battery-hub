@@ -13,12 +13,14 @@ const LABELS = {
   old: { name: 'old version', color: 'fbca04', description: 'Sent from an older Battery Hub' },
   duplicate: { name: 'duplicate', color: 'cfd3d7', description: 'This device was already reported' },
   cant: { name: "can't support", color: 'b60205', description: "The device doesn't share its battery level, so it can't be read" },
+  works: { name: 'works', color: '0e8a16', description: 'Someone confirmed Battery Hub reads this device' },
   board: { name: BOARD_LABEL, color: '5319e7', description: 'The list of requested devices' },
 };
 const NO_ANSWER = /^_?no response_?$|^(unknown|n\/a|none|-|\?+|no se|不知道)$/i;
 // 'don't know' typed any way: dont't, don`t, idk, not sure.
 const NO_IDEA = (t) => /^(i?don?t*know|idk|notsure|nose)$/.test(t.toLowerCase().replace(/[^a-z]/g, ''));
 
+const isWorksReport = (issue) => /^\[Works\]/i.test(issue.title || '') || (issue.labels || []).some((l) => (l.name || l) === 'works');
 const isDeviceReport = (issue) => /^\[Device\]/i.test(issue.title || '') || (issue.labels || []).some((l) => (l.name || l) === 'device-support');
 
 // The section under a "### Heading" of an issue form.
@@ -94,7 +96,7 @@ function decide(report, others, latest) {
 // asked counts once, and so does every 👍, but each device links only to its main report: closed
 // copies just send people there. Devices with no open report, or marked can't support, go in their
 // own section below.
-function boardBody(reports) {
+function boardBody(reports, works = []) {
   const rows = new Map();
   for (const r of reports) {
     if (!r.hardware) continue;
@@ -118,6 +120,16 @@ function boardBody(reports) {
   const open = [...rows.values()].filter((r) => r.open).sort(byScore);
   const closed = [...rows.values()].filter((r) => !r.open).sort(byScore);
   const head = ['| Requests | Device | ID | Report | |', '|---:|---|---|---|---|'];
+  // Works with: one row per hardware a person confirmed, with how many people did.
+  const confirmed = new Map();
+  for (const w of [...works].sort((x, y) => x.number - y.number)) {
+    if (!w.hardware) continue;
+    const row = confirmed.get(w.hardware) || { hardware: w.hardware, name: w.name, number: w.number, people: new Set() };
+    row.people.add(w.author || w.number);
+    confirmed.set(w.hardware, row);
+  }
+  const worksRows = [...confirmed.values()].sort((x, y) => y.people.size - x.people.size || x.number - y.number)
+    .map((r) => `| ${r.people.size} | ${String(r.name || '').replace(/\|/g, '/').slice(0, 60)} | \`${r.hardware}\` | #${r.number} |`);
   return [
     'Every device people have asked Battery Hub to support, most requested first. Updated by a bot on each new report.',
     '',
@@ -125,6 +137,14 @@ function boardBody(reports) {
     '',
     ...head,
     ...open.map(line),
+    '',
+    `<details><summary>Works with: devices people confirmed Battery Hub reads (${worksRows.length})</summary>`,
+    '',
+    '| People | Device | ID | Report |',
+    '|---:|---|---|---|',
+    ...worksRows,
+    '',
+    '</details>',
     '',
     `<details><summary>Can't be read: devices that were looked at and closed, or that don't share their battery level (${closed.length})</summary>`,
     '',
@@ -135,10 +155,15 @@ function boardBody(reports) {
   ].join('\n');
 }
 
-async function allDeviceIssues(github, owner, repo) {
+async function allIssues(github, owner, repo) {
   const issues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'all', per_page: 100 });
-  return issues.filter((i) => !i.pull_request && isDeviceReport(i));
+  return issues.filter((i) => !i.pull_request);
 }
+const allDeviceIssues = async (...a) => (await allIssues(...a)).filter(isDeviceReport);
+// "It works" reports a person sent, except ones closed as not planned (a mistake or a fake).
+const allWorks = async (...a) => (await allIssues(...a))
+  .filter((i) => isWorksReport(i) && i.state_reason !== 'not_planned')
+  .map((i) => ({ ...parseReport(i), number: i.number, author: i.user && i.user.login }));
 
 async function ensureLabels(github, owner, repo) {
   for (const l of Object.values(LABELS)) {
@@ -157,7 +182,7 @@ async function updateBoard(github, owner, repo, issues) {
     duplicate: (i.labels || []).some((l) => l.name === LABELS.duplicate.name) || i.state_reason === 'duplicate',
     cantSupport: (i.labels || []).some((l) => l.name === LABELS.cant.name),
   }));
-  const body = boardBody(reports);
+  const body = boardBody(reports, await allWorks(github, owner, repo));
   const boards = await github.paginate(github.rest.issues.listForRepo, { owner, repo, labels: BOARD_LABEL, state: 'all', per_page: 100 });
   const board = boards.find((i) => i.title === BOARD_TITLE);
   if (board) {
@@ -192,4 +217,4 @@ async function run({ github, context }) {
   await updateBoard(github, owner, repo, issues);
 }
 
-module.exports = { run, parseReport, hardwareOf, decide, boardBody, isOlder, isDeviceReport };
+module.exports = { run, parseReport, hardwareOf, decide, boardBody, isOlder, isDeviceReport, isWorksReport };

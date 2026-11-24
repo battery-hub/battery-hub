@@ -439,3 +439,16 @@ test('if GitHub search cannot be reached, nothing is blocked', async () => {
   };
   assert.equal((await gateFor({ fetcher })).gate, null);
 });
+
+test('an It works report says where the battery is, with nothing private', () => {
+  const { worksReport } = require('../src/main/diagnostics');
+  const profile = { usagePage: 0xff00, usage: 1, reportKind: 'input', reportId: 5, readLength: 8, byteOffset: 3, scaleMin: 0, scaleMax: 100 };
+  const result = worksReport({ version: '2.0.5' }, { id: '13652:62858:secret', product: 'VXE R1 Pro', manufacturer: 'VXE', driverId: 'generic', profile, capacity: 62 }, null);
+  const url = decodeURIComponent(result.url);
+  assert.equal(result.hardware, '3554:F58A');
+  assert.match(url, /template=works\.yml/);
+  assert.match(url, /title=\[Works\] VXE R1 Pro/);
+  assert.match(url, /input report 5 on ff00:0001, byte 3 of 8, 0-100 is 0-100%/);
+  assert.match(url, /Battery Hub shows: 62%/);
+  assert.ok(!/secret/.test(url));
+});

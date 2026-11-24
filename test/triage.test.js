@@ -73,7 +73,7 @@ test('the device list counts people and votes, links one main report, and keeps 
     { hardware: '046D:0ACB', name: 'G435', number: 10, state: 'open', author: 'f', votes: 0, cantSupport: true },
     { hardware: '046D:0ACB', name: 'G435', number: 16, state: 'open', author: 'g', votes: 0 },
   ]);
-  const [top, closed] = body.split('<details>');
+  const [top, , closed] = body.split('<details>');
   const rows = (part) => part.split('\n').filter((l) => /^\| \d/.test(l));
   assert.deepEqual(rows(top), [
     '| 5 | Fuxi-H3 | `040B:0897` | #18 | ✅ |',
@@ -88,4 +88,24 @@ test("a new report of a device marked can't support is closed with that answer",
   assert.equal(action.close, true);
   assert.deepEqual(action.labels, ['duplicate', "can't support"]);
   assert.match(action.comment, /can't read it/);
+});
+
+test('devices people confirmed are listed under Works with, one row per device', () => {
+  const works = [
+    { hardware: '3554:F58A', name: 'VXE R1 Pro', number: 160, author: 'a' },
+    { hardware: '3554:F58A', name: 'VXE R1 Pro', number: 170, author: 'b' },
+    { hardware: '25A7:FA70', name: 'Compx receiver', number: 165, author: 'c' },
+  ];
+  const body = boardBody([], works);
+  const section = body.split('<details>')[1];
+  assert.match(section, /Works with: devices people confirmed Battery Hub reads \(2\)/);
+  const rows = section.split('\n').filter((l) => /^\| \d/.test(l));
+  assert.deepEqual(rows, ['| 2 | VXE R1 Pro | `3554:F58A` | #160 |', '| 1 | Compx receiver | `25A7:FA70` | #165 |']);
+});
+
+test('a Works report is told apart from a device request', () => {
+  const { isWorksReport, isDeviceReport } = require('../.github/scripts/triage');
+  assert.equal(isWorksReport({ title: '[Works] VXE R1 Pro' }), true);
+  assert.equal(isDeviceReport({ title: '[Works] VXE R1 Pro' }), false);
+  assert.equal(isWorksReport({ title: '[Device] x', labels: [{ name: 'device-support' }] }), false);
 });

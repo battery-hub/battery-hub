@@ -6,6 +6,12 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Added
+
+- "It works! Let the developer know": a device you set up with the scan that reads fine asks
+  whether the level is right. A yes opens a filled-in GitHub form, which puts the device on the
+  Works with list and helps build it in for everyone.
+
 ### Changed
 
 - Device reports now include the bytes the scan caught, which is what a battery gets decoded from.
