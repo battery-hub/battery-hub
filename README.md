@@ -3,6 +3,8 @@
   <h1>Battery Hub</h1>
   <p><strong>Live battery monitoring for wireless mice, keyboards, headsets and controllers on Windows.</strong></p>
 
+  <p><strong>English</strong> · <a href="README.pt-BR.md">Português (Brasil)</a></p>
+
   <a href="https://github.com/battery-hub/battery-hub/releases/latest"><img src="https://img.shields.io/github/v/release/battery-hub/battery-hub?sort=semver" alt="Latest release" /></a>
   <a href="https://github.com/battery-hub/battery-hub/releases"><img src="https://img.shields.io/github/downloads/battery-hub/battery-hub/total" alt="Downloads" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/battery-hub/battery-hub" alt="License" /></a>

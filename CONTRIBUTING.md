@@ -1,5 +1,7 @@
 # Contributing
 
+**English** · [Português (Brasil)](CONTRIBUTING.pt-BR.md)
+
 Thanks for your interest in Battery Hub.
 
 ## Requesting support for a device

@@ -1,5 +1,7 @@
 # Security policy
 
+**English** · [Português (Brasil)](SECURITY.pt-BR.md)
+
 ## Supported versions
 
 Fixes are released against the latest version only. Please update to the
