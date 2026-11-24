@@ -109,3 +109,14 @@ test('a Works report is told apart from a device request', () => {
   assert.equal(isDeviceReport({ title: '[Works] VXE R1 Pro' }), false);
   assert.equal(isWorksReport({ title: '[Device] x', labels: [{ name: 'device-support' }] }), false);
 });
+
+test('a device someone confirmed works leaves the ranking and the closed list', () => {
+  const body = boardBody(
+    [{ hardware: '03F0:06BE', name: 'Cloud III S', number: 33, state: 'closed', author: 'a', votes: 0, works: true },
+      { hardware: '040B:0897', name: 'Fuxi-H3', number: 18, state: 'open', author: 'b', votes: 0 }],
+    [{ hardware: '03F0:06BE', name: 'Cloud III S', number: 33, author: 'a' }],
+  );
+  const [top, works, closed] = body.split('<details>');
+  assert.ok(!/06BE/.test(top) && !/06BE/.test(closed));
+  assert.match(works, /\| 1 \| Cloud III S \| `03F0:06BE` \| #33 \|/);
+});

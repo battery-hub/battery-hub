@@ -105,6 +105,7 @@ function boardBody(reports, works = []) {
     if (r.author) row.people.add(r.author);
     row.votes += r.votes || 0;
     row.good = row.good || r.good;
+    row.works = row.works || r.works;
     rows.set(r.hardware, row);
   }
   for (const row of rows.values()) {
@@ -117,8 +118,9 @@ function boardBody(reports, works = []) {
   const score = (r) => r.people.size + r.votes;
   const byScore = (x, y) => score(y) - score(x) || x.main.number - y.main.number;
   const line = (r) => `| ${score(r)} | ${String(r.main.name || '').replace(/\|/g, '/').slice(0, 60)} | \`${r.hardware}\` | #${r.main.number} |${r.good ? ' ✅' : ''} |`;
-  const open = [...rows.values()].filter((r) => r.open).sort(byScore);
-  const closed = [...rows.values()].filter((r) => !r.open).sort(byScore);
+  // A device someone confirmed works is listed under Works with only.
+  const open = [...rows.values()].filter((r) => r.open && !r.works).sort(byScore);
+  const closed = [...rows.values()].filter((r) => !r.open && !r.works).sort(byScore);
   const head = ['| Requests | Device | ID | Report | |', '|---:|---|---|---|---|'];
   // Works with: one row per hardware a person confirmed, with how many people did.
   const confirmed = new Map();
@@ -181,6 +183,7 @@ async function updateBoard(github, owner, repo, issues) {
     good: (i.labels || []).some((l) => l.name === LABELS.good.name),
     duplicate: (i.labels || []).some((l) => l.name === LABELS.duplicate.name) || i.state_reason === 'duplicate',
     cantSupport: (i.labels || []).some((l) => l.name === LABELS.cant.name),
+    works: (i.labels || []).some((l) => l.name === LABELS.works.name),
   }));
   const body = boardBody(reports, await allWorks(github, owner, repo));
   const boards = await github.paginate(github.rest.issues.listForRepo, { owner, repo, labels: BOARD_LABEL, state: 'all', per_page: 100 });
