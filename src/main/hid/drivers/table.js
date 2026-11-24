@@ -279,6 +279,18 @@ const DEVICES = [
     }],
   },
   {
+    // ATK X1 NearLink (issue #129), from ATK's web driver (v3-hub.atkgear.com, the Evision mouse
+    // class, isEvisionWireless 0x108b/0x108c): report 5, <request code lo hi> 1a = power info. The
+    // reply starts with the same request code; data from byte 7 holds the level, then charging.
+    name: 'ATK X1 NearLink', kind: 'mouse', vendorId: 0x373b, productIds: [0x108b, 0x108c],
+    channel: [{ usagePage: 0xffb1 }, { usagePage: 0xffb2 }],
+    steps: [{
+      request: pad([0x05, 0x01, 0x00, 0x1a], 64),
+      parse: (f) => (f.length < 10 || f[1] !== 0x01 || f[2] !== 0x00 ? null
+        : f[8] === 0 || f[8] > 100 ? OFFLINE : { capacity: f[8], charging: f[9] > 0 }),
+    }],
+  },
+  {
     // The X9's protocol behind a C-Media dongle (HeadsetControl mchose_v9_pro, issue #43).
     name: 'MCHOSE V9 PRO', kind: 'headset', vendorId: 0x291d, productIds: [0x385d],
     channel: { usagePage: 0xff90 },

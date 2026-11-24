@@ -528,3 +528,27 @@ test('Logitech G535 tries the HID++ collection first, then the media-key one Hea
   const channels = [{ usagePage: 0x0c, usage: 1, interface: 3, path: 'media' }, { usagePage: 0xff43, usage: 0x0202, interface: 3, path: 'hidpp' }];
   assert.deepEqual(channelsFor({ channels }, g535).map((c) => c.path), ['hidpp', 'media']);
 });
+
+test('ATK BitMouse receivers: the battery request is checksummed, and only an echo of it counts', () => {
+  const bm = require('../src/main/hid/drivers/bitmouse');
+  const req = bm.request(7);
+  assert.equal(req.length, 64);
+  assert.deepEqual(req.slice(0, 8), [0x08, 0x7d, 0x72, 0x02, 0x00, 0x01, 0x07, 0x01]);
+  assert.equal(bm.request(15)[1], 0x85);
+  const reply = (cmd, value) => { const f = new Array(64).fill(0); f[0] = 0x09; f[5] = cmd; f[7] = value; return f; };
+  assert.equal(bm.parseReply(reply(7, 64), 7), 64);
+  assert.equal(bm.parseReply(reply(15, 1), 7), null);
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  const nearlink = { vendorId: 0x373b, productId: 0x11dc, channels: [ch(0x0c, 1), ch(0xffb1, 1), ch(0xffb3, 1), ch(0xff05, 1), ch(1, 2), ch(1, 6)] };
+  assert.equal(detectDriver(nearlink).id, 'bitmouse');
+  const compx = { vendorId: 0x373b, productId: 0x101b, channels: [ch(0xff05, undefined), ch(0xff02, 2), ch(0xff04, 2), ch(1, 2)] };
+  assert.equal(detectDriver(compx).id, 'kysona');
+});
+
+test('ATK X1 NearLink asks for power info on report 5 and matches the request code', () => {
+  const x1 = entry(0x373b, 0x108b).steps[0];
+  assert.deepEqual(x1.request.slice(0, 4), [0x05, 0x01, 0x00, 0x1a]);
+  assert.deepEqual(x1.parse(frame([0x05, 0x01, 0x00, 0x1a, 0, 0, 0, 0, 71, 1])), { capacity: 71, charging: true });
+  assert.equal(x1.parse(frame([0x05, 0x02, 0x00, 0x1a, 0, 0, 0, 0, 71, 1])), null);
+  assert.equal(x1.parse(frame([0x05, 0x01, 0x00, 0x1a, 0, 0, 0, 0, 0, 0])).offline, true);
+});
