@@ -713,6 +713,20 @@ const BH_STRINGS = {
     'Notification test (this PC only)': 'Teste de notificação (somente neste PC)',
     'Low battery alerts are off in Settings': 'Os avisos de bateria fraca estão desativados em Configurações',
     'This device is no longer saved': 'Este dispositivo não está mais salvo',
+    // Set up a device (app.js)
+    '1. Scan the device': '1. Fazer a busca no dispositivo',
+    'Scanning…': 'Buscando…',
+    's remaining': 's restantes',
+    'No signal captured. Make sure the device (or its USB receiver) is connected, then run the scan again — and this time': 'Nenhum sinal capturado. Confira se o dispositivo (ou o receptor USB dele) está conectado e faça a busca de novo — e desta vez',
+    'turn the device off and back on': 'desligue e ligue o dispositivo',
+    'a couple of times while it scans.': 'algumas vezes durante a busca.',
+    '2. Pick the battery value': '2. Escolha o valor da bateria',
+    'Each row is a message from the device. Click the number that matches its battery level, usually a value from 0 to 100.': 'Cada linha é uma mensagem do dispositivo. Clique no número que corresponde ao nível da bateria dele, geralmente um valor de 0 a 100.',
+    '3. Confirm': '3. Confirmar',
+    'Selected value': 'Valor selecionado',
+    'This number is the battery percentage': 'Este número é a porcentagem da bateria',
+    "Battery level shown in the device's own app": 'Nível da bateria mostrado no app do próprio dispositivo',
+    'Save and add': 'Salvar e adicionar',
   },
 };
 

@@ -166,6 +166,14 @@ const PATTERNS = [
   [/^Opens GitHub with the device filled in, so it can be listed and built in for everyone\. Nothing is posted until you submit it there\. (.+)$/, {
     pt: (m, l) => `Abre o GitHub com o dispositivo preenchido, para que ele possa ser listado e incluído para todos. Nada é publicado até você enviá-lo lá. ${bhTranslate(m[1], l)}`,
   }],
+  // Set up a device: the scan and the choice of the battery value (app.js)
+  [/^The scan takes (\d+) seconds\. While it runs, turn the device off and on once or twice, because many devices only report their battery at power on\. If the device has its own app, keep it open\.$/, {
+    pt: (m) => `A busca leva ${m[1]} segundos. Enquanto ela roda, desligue e ligue o dispositivo uma ou duas vezes, porque muitos dispositivos só informam a bateria quando são ligados. Se o dispositivo tiver um app próprio, deixe-o aberto.`,
+  }],
+  [/^Scan failed: (.+)$/, { pt: (m, l) => `A busca falhou: ${bhTranslate(m[1], l)}` }],
+  [/^Channel 0x([0-9a-f]+), (\w+) report (\d+), seen (\d+) times$/, {
+    pt: (m) => `Canal 0x${m[1]}, relatório ${({ input: 'de entrada', feature: 'de recurso' })[m[2]] || m[2]} ${m[3]}, visto ${m[4]} ${m[4] === '1' ? 'vez' : 'vezes'}`,
+  }],
   [/^Battery from (\d+)% to (\d+)%, between (\d+)% and (\d+)%\. Use the arrow keys to read each point\.$/, {
     pt: (m) => `Bateria de ${m[1]}% a ${m[2]}%, entre ${m[3]}% e ${m[4]}%. Use as setas do teclado para ler cada ponto.`,
   }],
@@ -178,10 +186,12 @@ function bhTranslate(text, lang) {
   if (!trimmed) return s;
   const table = (typeof BH_STRINGS !== 'undefined' ? BH_STRINGS : require('./i18n-strings').BH_STRINGS)[lang];
   if (!table) return s;
-  let out = table[trimmed];
+  // A sentence the source wraps over several lines reaches us with its line breaks and indentation.
+  const key = trimmed.replace(/\s+/g, ' ');
+  let out = table[key];
   if (out === undefined) {
     for (const [re, forms] of PATTERNS) {
-      const m = trimmed.match(re);
+      const m = key.match(re);
       if (m && forms[lang]) { out = forms[lang](m, lang); break; }
     }
   }
