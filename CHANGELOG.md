@@ -18,6 +18,8 @@ All notable changes to this project are documented here. Versions follow
 - Glorious Model O, O-, D and D- Wireless (issue #45), LAMZU Maya X and other LAMZU mice (issue #146),
   and the MCHOSE A5 2.4G (issue #115), which share one receiver chip. The protocol comes from mxw
   and LAMZU's own web driver.
+- The Beken/Xenta 2.4G receiver 1d57:fa60 used by Attack Shark and other mice (issues #20, #73), from
+  Attack Shark Battery KDE.
 - Corsair Slipstream receiver (issue #46), for the mouse or keyboard paired with it.
 - Mice on the same Compx receiver chip as VXE: ATK, MADLIONS and other Compx receivers (issues #6,
   #61, #82, #92, #98, #111, #114, #121, #126, #135, #136). Linux reads one of them (373b:1085) the
@@ -28,6 +30,9 @@ All notable changes to this project are documented here. Versions follow
   Works with list and helps build it in for everyone.
 
 ### Changed
+
+- The scan now also listens on standard collections that carry no movement or keys. Some receivers
+  broadcast their battery there, and the scan used to miss it.
 
 - Device reports now include the bytes the scan caught, which is what a battery gets decoded from.
   Before, most only said how many messages came in. A keyboard's typing stays out, and anything

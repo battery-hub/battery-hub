@@ -512,3 +512,13 @@ test('Glorious and LAMZU mice answer in feature report 0, and know when the mous
   assert.equal(detectDriver({ vendorId: 0x2023, productId: 0xf013, channels: layout }).id, 'sinowealth'); // MCHOSE A5 2.4G
   assert.notEqual((detectDriver({ vendorId: 0x373e, productId: 0x001e, channels: layout.slice(0, 1) }) || {}).id, 'sinowealth');
 });
+
+test('the Beken/Xenta receiver broadcast is read, and the link-blink frame is not a reading', () => {
+  const beken = require('../src/main/hid/drivers/beken');
+  assert.deepEqual(beken.parseFrame([0x03, 0xe5, 0x40, 0x01, 77]), { capacity: 77, charging: false });
+  assert.deepEqual(beken.parseFrame([0x03, 0xe5, 0x40, 0x03, 40]), { capacity: 40, charging: true });
+  assert.equal(beken.parseFrame([0x03, 0xe5, 0x01, 0x00, 0x00]), null);
+  assert.equal(beken.parseFrame([0x03, 0xe5, 0x40, 0x01, 0xc8]), null);
+  const channels = [{ usagePage: 1, usage: 2, path: 'm' }, { usagePage: 0x0a, path: 'v' }, { usagePage: 0x0b, path: 'w' }];
+  assert.equal(detectDriver({ vendorId: 0x1d57, productId: 0xfa60, channels }).id, 'beken');
+});

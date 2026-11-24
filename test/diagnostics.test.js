@@ -452,3 +452,12 @@ test('an It works report says where the battery is, with nothing private', () =>
   assert.match(url, /Battery Hub shows: 62%/);
   assert.ok(!/secret/.test(url));
 });
+
+test("a keyboard receiver's broadcast on an odd standard page is kept, its typing is not", async () => {
+  const broadcast = { usagePage: 0x0a, usage: 0, reportKind: 'input', reportId: 3, bytes: [0x03, 0xe5, 0x40, 0x01, 0x4d], count: 12 };
+  const typed = { usagePage: 0x01, usage: 6, reportKind: 'input', reportId: 1, bytes: [1, 0, 0, 0x13, 0x04], count: 5 };
+  const result = await reportFor({ frames: [broadcast, typed] }, { channels: [vendorChannel, { usagePage: 1, usage: 6, path: 'x' }] });
+  const scan = result.form.get('scan');
+  assert.match(scan, /^000a:0000 report 3, seen 12x: 03e540014d$/m);
+  assert.ok(!/0100001304/.test(scan));
+});

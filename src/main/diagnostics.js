@@ -293,11 +293,13 @@ function frameLine(frame) {
   return `${hex4(frame.usagePage)}:${hex4(frame.usage)} ${kind}report ${frame.reportId}, seen ${frame.count}x: ${hex}${more}`;
 }
 
-const isVendorPage = (frame) => frame.usagePage >= 0xff00;
+// Pages that carry movement, keys or media keys. Frames from any other page are the device's own.
+const INPUT_PAGES = new Set([0x01, 0x07, 0x0c, 0x0d]);
+const isOwnPage = (frame) => !INPUT_PAGES.has(frame.usagePage);
 
 // What was tried and what came back, with the bytes: they're what a battery gets decoded from.
 // A scan's messages are public once sent, so:
-//   - a keyboard's typing channels are left out, and of its own (vendor) channels only messages
+//   - a keyboard's typing channels are left out, and of its own channels only messages
 //     seen KEYBOARD_REPEATS times or more: those are status messages. Typed keys each show once,
 //     and the order is lost, so nothing typed can be read back from what's kept
 //   - anything that looks like an address or serial is masked (maskIds)
@@ -317,7 +319,7 @@ function scanLines({ scans = [], frames = [], lastError, failedReads }, facts) {
   const feature = unique.filter((f) => f.reportKind !== 'input');
   let input = unique.filter((f) => f.reportKind === 'input').sort((a, b) => b.count - a.count);
   if (facts.hasKeyboard) {
-    const kept = input.filter((f) => isVendorPage(f) && f.count >= KEYBOARD_REPEATS);
+    const kept = input.filter((f) => isOwnPage(f) && f.count >= KEYBOARD_REPEATS);
     if (kept.length < input.length) lines.push(`Input messages: ${input.length - kept.length} left out because this device has a keyboard`);
     input = kept;
   }
