@@ -115,6 +115,12 @@ function aeroxBattery(f) {
   return { capacity: level, charging: !!(f[1] & 0x80) };
 }
 
+function razerHeadsetRequest(command) {
+  const r = pad([0x02, 0x00, 0x60, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x80, command], 64);
+  r[62] = r.slice(0, 62).reduce((x, b) => x ^ b, 0);
+  return r;
+}
+
 const DEVICES = [
   // Headsets
   {
@@ -323,6 +329,23 @@ const DEVICES = [
         : (f[20] & 0x7f) === 0 || (f[20] & 0x7f) > 100 ? OFFLINE : { capacity: f[20] & 0x7f, charging: f[20] >= 0x80 }),
     }],
   })),
+  {
+    // Razer BlackShark V3 and V3 Pro, cable and dongle (issue #21). openrazer PR 2794 (from Synapse
+    // captures), secbird (checked on a V3 Pro, both PIDs) and Joule (checked on a V3) agree:
+    // output report 2 on 0xFF14, 64 bytes, XOR of bytes 0-61 in byte 62:
+    //   02 00 60 00 00 00 04 00 00 80 21 00 00 ... <xor>    class 0x21 = battery
+    //   reply 02 02 60 00 00 00 05 00 00 80 21 01 01 <level> (01 = reply, 02 = the headset's own push)
+    // 0xff means the radio link isn't up. Asking every ~2 s is reported to drop the link; our poll
+    // is a minute by default and never under 10 s.
+    name: 'Razer BlackShark V3', kind: 'headset', vendorId: 0x1532, productIds: [0x0576, 0x0577, 0x0579, 0x057a],
+    channel: { usagePage: 0xff14, usage: 0x01 },
+    steps: [{
+      request: razerHeadsetRequest(0x21),
+      parse: (f) => (f.length < 14 || f[0] !== 0x02 || f[1] !== 0x02 || f[2] !== 0x60 || f[9] !== 0x80
+        || f[10] !== 0x21 || (f[11] !== 0x01 && f[11] !== 0x02) || f[12] !== 0x01 ? null
+        : f[13] === 0 || f[13] > 100 ? OFFLINE : { capacity: f[13] }),
+    }],
+  },
   {
     // The X9's protocol behind a C-Media dongle (HeadsetControl mchose_v9_pro, issue #43).
     name: 'MCHOSE V9 PRO', kind: 'headset', vendorId: 0x291d, productIds: [0x385d],

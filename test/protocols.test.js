@@ -684,3 +684,17 @@ test('ATK Holtek receivers answer get-config 82 with level | charging at byte 8'
   const nano = { vendorId: 0x373b, productId: 0x1178, channels: [ch(0xff10, 1), ch(1, 2), ch(1, 6), ch(0xff00, 1), ch(0x0c, 1), ch(0xff11, 1)] };
   assert.equal(detectDriver(nano).id, 'atkHoltek');
 });
+
+test('Razer BlackShark V3 asks class 0x21 with the XOR byte and reads byte 13', () => {
+  const step = entry(0x1532, 0x0577).steps[0];
+  assert.deepEqual(step.request.slice(0, 11), [0x02, 0x00, 0x60, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x80, 0x21]);
+  assert.equal(step.request[62], 0xc7); // as Joule logs it
+  assert.equal(step.request.length, 64);
+  const reply = [0x02, 0x02, 0x60, 0, 0, 0, 0x05, 0, 0, 0x80, 0x21, 0x01, 0x01, 35];
+  assert.deepEqual(step.parse(frame(reply)), { capacity: 35 });
+  assert.equal(step.parse(frame([0x02, 0x02, 0x60, 0, 0, 0, 0x05, 0, 0, 0x80, 0x21, 0x01, 0x01, 0xff])).offline, true);
+  // From the issue #21 scan: class 0x60, not the battery.
+  assert.equal(step.parse(frame([0x02, 0x02, 0x60, 0, 0, 0, 0x0a, 0, 0, 0x80, 0x60, 0x01, 0x06, 0x08])), null);
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  assert.equal(detectDriver({ vendorId: 0x1532, productId: 0x0577, channels: [ch(0x0c, 1), ch(0xff13, 1), ch(0x0b, 5), ch(0xff14, 1)] }).id, 'tabled');
+});
