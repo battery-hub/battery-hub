@@ -519,6 +519,10 @@ test('the Beken/Xenta receiver broadcast is read, and the link-blink frame is no
   assert.deepEqual(beken.parseFrame([0x03, 0xe5, 0x40, 0x03, 40]), { capacity: 40, charging: true });
   assert.equal(beken.parseFrame([0x03, 0xe5, 0x01, 0x00, 0x00]), null);
   assert.equal(beken.parseFrame([0x03, 0xe5, 0x40, 0x01, 0xc8]), null);
+  // An Attack Shark X11 receiver (issue #175) sends 55 where others send e5, same layout.
+  assert.deepEqual(beken.parseFrame([0x03, 0x55, 0x40, 0x01, 100]), { capacity: 100, charging: false });
+  assert.equal(beken.parseFrame([0x03, 0x55, 0x01, 0x00, 0x00]), null);
+  assert.equal(beken.parseFrame([0x03, 0x44, 0x40, 0x01, 50]), null);
   const channels = [{ usagePage: 1, usage: 2, path: 'm' }, { usagePage: 0x0a, path: 'v' }, { usagePage: 0x0b, path: 'w' }];
   assert.equal(detectDriver({ vendorId: 0x1d57, productId: 0xfa60, channels }).id, 'beken');
 });
