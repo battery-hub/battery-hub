@@ -443,3 +443,18 @@ test('MCHOSE V9 PRO reads like the X9, and the Astro A50 Gen 4 checks the headse
   assert.deepEqual(level.parse(frame([0x02, 0x02, 0x01, 0x80 | 64])), { capacity: 64, charging: true });
   assert.equal(level.parse(frame([0x02, 0x01, 0x01, 0x00])), null);
 });
+
+test('mice on the Compx receiver chip use the VXE protocol, other chips with the same name do not', () => {
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  const compxLayout = [ch(1, 2), ch(1, 6), ch(0xff02, 2), ch(0xff04, 2), ch(0xff03, 0)];
+  const device = (vendorId, productId, channels) => ({ vendorId, productId, channels });
+  assert.equal(detectDriver(device(0x373b, 0x1085, compxLayout)).id, 'kysona'); // Linux hid-pulsar's ATK dongle
+  assert.equal(detectDriver(device(0x260d, 0x1074, compxLayout)).id, 'kysona');
+  assert.equal(detectDriver(device(0x25a7, 0xfa07, compxLayout)).id, 'kysona');
+  const nearlink = [ch(1, 2), ch(1, 6), ch(0xffb1, 1), ch(0xffb2, 1)];
+  assert.notEqual((detectDriver(device(0x373b, 0x108b, nearlink)) || {}).id, 'kysona');
+  const noCommand = [ch(1, 2), ch(0xff01, 0), ch(0xff02, 2)];
+  assert.notEqual((detectDriver(device(0x25a7, 0xfa70, noCommand)) || {}).id, 'kysona');
+  assert.equal(detectDriver(device(0x3554, 0xf58a, [ch(0xff02, 2)])).id, 'kysona');
+  assert.equal(detectDriver(device(0x3554, 0xfa09, compxLayout)).id, 'compx');
+});

@@ -100,11 +100,11 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | Razer | 81 wireless mice and keyboards |
 | SteelSeries | Arctis 1, 7, 7+, 9, Nova 3P, Nova 5, Nova 7, Nova Pro Wireless headsets; Aerox, Prime and Rival 3 Wireless mice |
 | HyperX | Cloud Alpha Wireless, Cloud Flight, Cloud II Wireless |
-| Corsair | Void, Void Wireless v2, HS80 MAX, Virtuoso, Virtuoso SE, XT and MAX headsets |
+| Corsair | Void, Void Wireless v2, HS80 MAX, Virtuoso, Virtuoso SE, XT and MAX headsets; Slipstream receiver |
 | Audeze | Maxwell, Maxwell 2 |
-| Astro | A50 Gen 4 |
+| Astro | A50 Gen 4, A50 Gen 5 |
 | MCHOSE | V9 Turbo+, V9 PRO, X9 |
-| VXE, ATK | Dragonfly R1 Pro, NordicMouse and other Kysona-based mice |
+| VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers |
 | Compx 2.4G receiver | AULA F87 Pro and F99 Pro, Lingbao K98, MCHOSE G75 keyboards |
 
 Tested on real hardware: VXE NordicMouse, MCHOSE V9 Turbo+, DualSense on USB and Bluetooth, and Logitech MX Master 4 over Bluetooth. The rest are built from the protocols documented by the projects below and checked against those byte layouts, so please [report a device](https://github.com/battery-hub/battery-hub/issues/new?template=device-support.yml) if one misbehaves.

@@ -203,6 +203,18 @@ const DEVICES = [
     ],
   },
   {
+    // The Slipstream receiver (issue #46) relays to its mouse or keyboard over the same Bragi
+    // properties, with the same collections. OpenLinkHub (src/devices/slipstream) puts a single
+    // paired device at 0x09; with several paired, this reads the first one only.
+    name: 'Corsair Slipstream receiver', kind: 'mouse', vendorId: 0x1b1c,
+    productIds: [0x1bdc],
+    channel: { usagePage: 0xff42 },
+    steps: [
+      bragiStep([0x00], BRAGI_RECEIVER, 0x12, () => ({})),
+      bragiStep([0x00], BRAGI_HEADSET, 0x0f, bragiBattery),
+    ],
+  },
+  {
     // 0x0a40 is a Virtuoso SE receiver HeadsetControl doesn't list yet (issue #99); its scan shows
     // the same Bragi replies.
     name: 'Corsair Virtuoso SE and XT', kind: 'headset', vendorId: 0x1b1c,
@@ -241,6 +253,16 @@ const DEVICES = [
       { request: pad([0x02, 0x54, 0x00], 64), parse: (f) => (f.length < 4 || f[0] !== 0x02 || f[1] !== 0x02 ? null : f[3] & 0x02 ? {} : OFFLINE) },
       { request: pad([0x02, 0x7c, 0x00], 64), parse: (f) => (f.length < 4 || f[0] !== 0x02 || f[1] !== 0x02 ? null : { capacity: clampPercent(f[3] & 0x7f), charging: !!(f[3] & 0x80) }) },
     ],
+  },
+  {
+    // HeadsetControl logitech_astro_a50 (Gen 5 base, issue #53): 02 0c LEN 00 CMD HANDLE ...;
+    // battery is CMD 0x06, reply byte 6 = percent, byte 8 = docked/charging. Matched on CMD.
+    name: 'Astro A50 Gen 5', kind: 'headset', vendorId: LOGITECH, productIds: [0x0b1c],
+    channel: { usagePage: 0xff32 },
+    steps: [{
+      request: pad([0x02, 0x0c, 0x03, 0x00, 0x06, 0x0c], 64),
+      parse: (f) => (f.length < 9 || f[0] !== 0x02 || f[1] !== 0x0c || f[4] !== 0x06 ? null : { capacity: clampPercent(f[6]), charging: f[8] !== 0 }),
+    }],
   },
   {
     // The X9's protocol behind a C-Media dongle (HeadsetControl mchose_v9_pro, issue #43).

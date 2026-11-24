@@ -10,7 +10,12 @@ All notable changes to this project are documented here. Versions follow
 
 - Corsair Void Wireless v2, HS80 MAX, Virtuoso MAX, Virtuoso SE and Virtuoso XT headsets
   (issues #97, #99, #100), using the protocol HeadsetControl documents.
-- MCHOSE V9 PRO (issue #43) and Astro A50 Gen 4 (issue #35) headsets, also from HeadsetControl.
+- MCHOSE V9 PRO (issue #43), Astro A50 Gen 4 (issue #35) and Astro A50 Gen 5 (issue #53) headsets,
+  also from HeadsetControl.
+- Corsair Slipstream receiver (issue #46), for the mouse or keyboard paired with it.
+- Mice on the same Compx receiver chip as VXE: ATK, MADLIONS and other Compx receivers (issues #6,
+  #61, #82, #92, #98, #111, #114, #121, #126, #135, #136). Linux reads one of them (373b:1085) the
+  same way.
 
 - "It works! Let the developer know": a device you set up with the scan that reads fine asks
   whether the level is right. A yes opens a filled-in GitHub form, which puts the device on the
