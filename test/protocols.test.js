@@ -222,6 +222,7 @@ test('devices are routed to the right driver, and unknown ones are left alone', 
   const id = (d) => (detectDriver(d) || { id: null }).id;
   assert.equal(id(device(0x046d, 0x0ab5, 'G733', [channel(0xff43, 0x0202, 3), channel(0xff00, 2, 2)])), 'tabled');
   assert.equal(id(device(0x046d, 0xc548, 'USB Receiver', [channel(0xff00, 2, 2)])), 'hidpp');
+  assert.equal(id(device(0x046d, 0xc54f, 'USB Receiver', [channel(1, 6, 0), channel(0xff43, 0x0301, 2), channel(1, 2, 1), channel(0xff43, 0x0302, 2), channel(0x0c, 1, 2)])), 'hidpp');
   assert.equal(id(device(0x1532, 0x00a6, 'Razer', [channel(1, 2, 0)])), 'razer');
   assert.equal(id(device(0x054c, 0x0ce6, 'DualSense', [channel(1, 5, 3)])), 'playstation');
   assert.equal(id(device(0x3329, 0x4b19, 'Audeze Maxwell', [channel(0xff13, 1, 3)])), 'audeze');
