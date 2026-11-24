@@ -140,12 +140,34 @@ const PATTERNS = [
     pt: (m) => `Não respondeu, então pode estar em repouso. Última leitura ${checkAgo(m[1])}.`,
   }],
   [/^Can't read it: (.+)$/, { pt: (m) => `Não foi possível ler: ${m[1]}` }],
-  [/^The check couldn't finish: (.+)$/, { pt: (m) => `A verificação não pôde terminar: ${m[1]}` }],
+  [/^The check couldn't finish: (.+)$/, { pt: (m, l) => `A verificação não pôde terminar: ${bhTranslate(m[1], l)}` }],
   [/^(Opens GitHub with the report filled in|Your browser opened with the report filled in)\. Nothing is posted until you submit it there\. You need a free GitHub account\. Issues are public, so your user name, device serials and Bluetooth details are left out\.( This report is too long for a link, so the full version is also copied for you to paste in\.)?$/, {
     pt: (m) => (m[1].startsWith('Opens') ? 'Abre o GitHub com o relatório preenchido.' : 'O navegador abriu com o relatório preenchido.')
       + ' Nada é publicado até você enviá-lo lá. Você precisa de uma conta gratuita no GitHub.'
       + ' As issues são públicas, por isso seu nome de usuário, os números de série dos dispositivos e os dados de Bluetooth ficam de fora.'
       + (m[2] ? ' Este relatório é grande demais para um link, então a versão completa também foi copiada para você colar.' : ''),
+  }],
+  // The rest of the Help panel (support.js): reports that were already sent, and errors with a reason.
+  [/^Open report #(\d+)$/, { pt: (m) => `Abrir relatório #${m[1]}` }],
+  [/^Someone with the same device opened report #(\d+)\. Add yours to it instead of starting a new one\.$/, {
+    pt: (m) => `Alguém com o mesmo dispositivo abriu o relatório #${m[1]}. Adicione o seu a ele em vez de começar um novo.`,
+  }],
+  [/^This device was looked at in report #(\d+), which has the answer\. Add yours there if something changed\.$/, {
+    pt: (m) => `Este dispositivo foi analisado no relatório #${m[1]}, que tem a resposta. Adicione o seu lá se algo mudou.`,
+  }],
+  [/^Battery Hub opened a report on it (.+)\. Add anything new as a comment there\.$/, {
+    pt: (m) => `O Battery Hub abriu um relatório sobre ele em ${m[1]}. Adicione qualquer novidade como comentário lá.`,
+  }],
+  [/^(.+) This problem may already be fixed\. Update, then scan again\.$/, {
+    pt: (m, l) => `${bhTranslate(m[1], l)} Este problema pode já ter sido corrigido. Atualize e busque de novo.`,
+  }],
+  [/^The report couldn't be made: (.+)$/, { pt: (m, l) => `Não foi possível criar o relatório: ${bhTranslate(m[1], l)}` }],
+  [/^The form couldn't be opened: (.+)$/, { pt: (m, l) => `Não foi possível abrir o formulário: ${bhTranslate(m[1], l)}` }],
+  [/^Opens GitHub with the device filled in, so it can be listed and built in for everyone\. Nothing is posted until you submit it there\. (.+)$/, {
+    pt: (m, l) => `Abre o GitHub com o dispositivo preenchido, para que ele possa ser listado e incluído para todos. Nada é publicado até você enviá-lo lá. ${bhTranslate(m[1], l)}`,
+  }],
+  [/^Battery from (\d+)% to (\d+)%, between (\d+)% and (\d+)%\. Use the arrow keys to read each point\.$/, {
+    pt: (m) => `Bateria de ${m[1]}% a ${m[2]}%, entre ${m[3]}% e ${m[4]}%. Use as setas do teclado para ler cada ponto.`,
   }],
 ];
 

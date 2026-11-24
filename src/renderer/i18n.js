@@ -20,7 +20,8 @@
   }
 
   function attrs(el) {
-    if (skipped(el)) return;
+    // A text box's placeholder and label are the app's text, even though what is typed in it is not.
+    if (!el || (el.closest && el.closest('[data-no-translate]'))) return;
     el.bhAttrs = el.bhAttrs || {};
     for (const name of ATTRS) {
       const value = el.getAttribute(name);

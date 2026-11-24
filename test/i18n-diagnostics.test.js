@@ -148,3 +148,42 @@ test('only the other languages keep the check in English for now; the report is 
   const support = fs.readFileSync(path.join(__dirname, '../src/renderer/support.js'), 'utf8');
   assert.match(support, /supportText\('pre', '', result\.report\)\.dataset\.noTranslate|noTranslate/, 'the report shown on screen is marked as not to be translated');
 });
+
+// Everything else the Help panel can show: the notes under the report, the cards that offer to send
+// a device report, and the notices about a report that was already sent.
+test('every fixed text in support.js has a Portuguese translation', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../src/renderer/support.js'), 'utf8')
+    .split('\n').filter((line) => !/^\s*\/\//.test(line)).join('\n');
+  const parts = ['You need a free GitHub account.', ' This report is too long for a link'];
+  const literals = [...source.matchAll(/'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"/g)]
+    .map((m) => (m[1] !== undefined ? m[1] : m[2]).replace(/\\'/g, "'").replace(/\\"/g, '"'))
+    .filter((t) => /^[A-Z]/.test(t) && /\s/.test(t) && !/[=<>{}]/.test(t))
+    .filter((t) => !parts.some((p) => t.startsWith(p)));
+  assert.ok(literals.length > 10, 'the texts were found');
+  assertAllTranslated(literals);
+});
+
+test('the texts with a report number, a date or an error are in Portuguese', () => {
+  assert.equal(pt('Open report #12'), 'Abrir relatório #12');
+  assert.equal(
+    pt('Someone with the same device opened report #12. Add yours to it instead of starting a new one.'),
+    'Alguém com o mesmo dispositivo abriu o relatório #12. Adicione o seu a ele em vez de começar um novo.',
+  );
+  assertAllTranslated([
+    'This device was looked at in report #12, which has the answer. Add yours there if something changed.',
+    'Battery Hub opened a report on it 24/11/2026. Add anything new as a comment there.',
+    'You have 2.0.5. The latest is v2.1.0. This problem may already be fixed. Update, then scan again.',
+    "The report couldn't be made: This device is no longer saved",
+    "The form couldn't be opened: offline",
+    'Opens GitHub with the device filled in, so it can be listed and built in for everyone. Nothing is posted until you submit it there. You need a free GitHub account. Issues are public, so your user name, device serials and Bluetooth details are left out.',
+    'Battery from 80% to 40%, between 35% and 90%. Use the arrow keys to read each point.',
+    'Scan again', 'Choose an icon', 'Notification test (this PC only)', 'Low battery alerts are off in Settings', 'This device is no longer saved',
+  ]);
+  assert.match(pt("The report couldn't be made: This device is no longer saved"), /Este dispositivo não está mais salvo/, 'the reason is translated too when it is known');
+});
+
+test('text boxes get their placeholder and label translated', () => {
+  const i18n = fs.readFileSync(path.join(__dirname, '../src/renderer/i18n.js'), 'utf8');
+  const attrs = i18n.slice(i18n.indexOf('function attrs'), i18n.indexOf('function walk'));
+  assert.ok(!/skipped\(el\)/.test(attrs), 'attrs() does not skip INPUT/TEXTAREA, whose placeholder is text the app wrote');
+});
