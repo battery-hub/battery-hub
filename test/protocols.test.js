@@ -492,3 +492,23 @@ test('MCHOSE mice: the read-device request is inverted, and the level comes back
   assert.equal(detectDriver(device(0x5253, 0x1021)).id, 'mchose-mouse');
   assert.notEqual((detectDriver(device(0x3837, 0x3033)) || {}).id, 'mchose-mouse');
 });
+
+test('Glorious and LAMZU mice answer in feature report 0, and know when the mouse sleeps', () => {
+  const g = require('../src/main/hid/drivers/sinowealth');
+  const req = g.request();
+  assert.equal(req.length, 65);
+  assert.deepEqual([req[0], req[3], req[4], req[6]], [0, 2, 2, 0x83]);
+  const reply = (status, pct) => { const r = new Array(65).fill(0); r[1] = status; r[6] = 0x83; r[8] = pct; return r; };
+  assert.deepEqual(g.parseReply(reply(0xa1, 57), false), { capacity: 57, charging: false });
+  assert.deepEqual(g.parseReply(reply(0xa1, 80), true), { capacity: 80, charging: true });
+  const charging = reply(0xa1, 66); charging[7] = 1;
+  assert.deepEqual(g.parseReply(charging, false), { capacity: 66, charging: true });
+  assert.equal(g.parseReply(reply(0xa4, 0), false).offline, true);
+  assert.equal(g.parseReply(reply(0xa0, 0), false), null);
+  const device = { vendorId: 0x258a, productId: 0x2023, channels: [{ usagePage: 0xffa0, usage: 1, interface: 1, path: 'a' }, { usagePage: 0xffff, usage: 1, interface: 2, path: 'b' }] };
+  assert.equal(detectDriver(device).id, 'sinowealth');
+  const layout = [{ usagePage: 1, usage: 2, path: 'm' }, { usagePage: 0xffa0, usage: 1, path: 'a' }, { usagePage: 0xffff, usage: 1, path: 'b' }, { usagePage: 0xffff, path: 'c' }];
+  assert.equal(detectDriver({ vendorId: 0x373e, productId: 0x001e, channels: layout }).id, 'sinowealth'); // LAMZU Maya X 8K
+  assert.equal(detectDriver({ vendorId: 0x2023, productId: 0xf013, channels: layout }).id, 'sinowealth'); // MCHOSE A5 2.4G
+  assert.notEqual((detectDriver({ vendorId: 0x373e, productId: 0x001e, channels: layout.slice(0, 1) }) || {}).id, 'sinowealth');
+});

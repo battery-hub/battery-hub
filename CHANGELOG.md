@@ -15,6 +15,9 @@ All notable changes to this project are documented here. Versions follow
 - MCHOSE mice: A7 V2 Ultra, A5 Ultra, K7 Ultra and A7 Ultra (issues #54, #68, #77, #80, #130, #142,
   #161), and MCHOSE G75 V2, G87 V2, K87S and K99 V3 keyboards on their 2.4G receiver (issue #50).
   Both protocols are read from MCHOSE's own web driver.
+- Glorious Model O, O-, D and D- Wireless (issue #45), LAMZU Maya X and other LAMZU mice (issue #146),
+  and the MCHOSE A5 2.4G (issue #115), which share one receiver chip. The protocol comes from mxw
+  and LAMZU's own web driver.
 - Corsair Slipstream receiver (issue #46), for the mouse or keyboard paired with it.
 - Mice on the same Compx receiver chip as VXE: ATK, MADLIONS and other Compx receivers (issues #6,
   #61, #82, #92, #98, #111, #114, #121, #126, #135, #136). Linux reads one of them (373b:1085) the

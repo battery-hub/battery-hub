@@ -105,6 +105,7 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | Astro | A50 Gen 4, A50 Gen 5 |
 | MCHOSE | V9 Turbo+, V9 PRO, X9 headsets; A7 V2 Ultra, A5 Ultra, K7 Ultra, A7 Ultra mice; G75 V2, G87 V2, K87S, K99 V3 keyboards |
 | VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers |
+| Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X and other LAMZU mice |
 | Compx 2.4G receiver | AULA F87 Pro and F99 Pro, Lingbao K98, MCHOSE G75 keyboards |
 
 Tested on real hardware: VXE NordicMouse, MCHOSE V9 Turbo+, DualSense on USB and Bluetooth, and Logitech MX Master 4 over Bluetooth. The rest are built from the protocols documented by the projects below and checked against those byte layouts, so please [report a device](https://github.com/battery-hub/battery-hub/issues/new?template=device-support.yml) if one misbehaves.
