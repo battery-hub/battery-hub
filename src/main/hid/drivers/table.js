@@ -310,6 +310,19 @@ const DEVICES = [
         : f[8] === 0 || f[8] > 100 ? OFFLINE : { capacity: f[8], charging: f[9] > 0 }),
     }],
   },
+  ...[[0x3434, 'Keychron Ultra-Link 8K'], [0x362d, 'SKN Ultra-Link 8K']].map(([vendorId, name]) => ({
+    // Keychron's 8K receiver, also sold under Keychron's SKN brand (issue #164). From the Linux
+    // keychron-battery-dkms module and HaloBattery issue #373, checked there on a real M6 8K:
+    // output report b3 06 on 0xFFC1, the reply b4 06 ... holds level | 0x80 (charging) at byte 20.
+    // Windows refuses it as a feature report. Keyboards behind the receiver may not answer.
+    name, kind: 'mouse', vendorId, productIds: [0xd028],
+    channel: { usagePage: 0xffc1, usage: 0x01 },
+    steps: [{
+      request: pad([0xb3, 0x06], 64),
+      parse: (f) => (f.length < 21 || f[0] !== 0xb4 || f[1] !== 0x06 ? null
+        : (f[20] & 0x7f) === 0 || (f[20] & 0x7f) > 100 ? OFFLINE : { capacity: f[20] & 0x7f, charging: f[20] >= 0x80 }),
+    }],
+  })),
   {
     // The X9's protocol behind a C-Media dongle (HeadsetControl mchose_v9_pro, issue #43).
     name: 'MCHOSE V9 PRO', kind: 'headset', vendorId: 0x291d, productIds: [0x385d],

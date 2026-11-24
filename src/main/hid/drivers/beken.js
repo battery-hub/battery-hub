@@ -3,7 +3,7 @@
 // vendor interface. From Attack Shark Battery KDE (gitlab.com/gabriel17166/Attack-Shark-Battery-KDE,
 // sharktray/mouse.py), checked there against the level falling with use and rising on charge:
 //
-//   03 e5 40 <state> <level>     state 01 on battery, 03 charging; level 0-100
+//   03 e5 40 <state> <level>     state 01 on battery, 03 charging; level 0-100 (some send 03 55 40)
 //   03 e5 01 00 00               sent while the link blinks: not a reading
 //
 // With the mouse on its cable it becomes another USB device and the receiver goes quiet, so
@@ -11,7 +11,8 @@
 const session = require('../session');
 
 const VENDOR = 0x1d57;
-const PRODUCTS = new Set([0xfa60]);
+// fa55: another Attack Shark X11 receiver (issue #88). Only listening, so trying it is harmless.
+const PRODUCTS = new Set([0xfa60, 0xfa55]);
 const LISTEN_MS = 3500; // a frame every ~2 s, with room for one lost
 const READ_SLICE_MS = 100;
 // The broadcast comes on the receiver's own interface, not on its mouse, keyboard or media keys.

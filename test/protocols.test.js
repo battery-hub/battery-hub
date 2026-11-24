@@ -650,3 +650,37 @@ test('G3 A checks online status before accepting a receiver battery cached while
     require.cache[driverPath] = cached;
   }
 });
+
+test('Ultra-Link 8K (Keychron and SKN) asks b3 06 and reads level | charging at byte 20', () => {
+  for (const vendorId of [0x3434, 0x362d]) {
+    const step = entry(vendorId, 0xd028).steps[0];
+    assert.deepEqual(step.request.slice(0, 3), [0xb3, 0x06, 0x00]);
+    assert.equal(step.request.length, 64);
+    // From HaloBattery issue #373: an M6 8K at 99%, then on its charger.
+    const reply = [0xb4, 0x06, 0x00, 0x44, 0x44, 0x04, 0x90, 0x01, 0x20, 0x03, 0x40, 0x06, 0x80, 0x0c, 0x88, 0x13, 0x15, 0x05, 0x04, 0x0a, 0x63, 0x00];
+    assert.deepEqual(step.parse(frame(reply)), { capacity: 99, charging: false });
+    reply[20] = 0xe3;
+    assert.deepEqual(step.parse(frame(reply)), { capacity: 99, charging: true });
+    assert.equal(step.parse(frame([0xb3, 0x06, ...new Array(30).fill(0)])), null); // an echo
+  }
+});
+
+test('Beken receivers also send 03 55 40 and fa55 is listened to', () => {
+  const beken = require('../src/main/hid/drivers/beken');
+  assert.deepEqual(beken.parseFrame([0x03, 0x55, 0x40, 0x01, 0x64]), { capacity: 100, charging: false });
+  assert.equal(beken.parseFrame([0x03, 0x56, 0x40, 0x01, 0x64]), null);
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  assert.equal(detectDriver({ vendorId: 0x1d57, productId: 0xfa55, channels: [ch(1, 2), ch(0x0a, 1)] }).id, 'beken');
+});
+
+test('ATK Holtek receivers answer get-config 82 with level | charging at byte 8', () => {
+  const atk = require('../src/main/hid/drivers/atk-holtek');
+  assert.deepEqual(atk.REQUEST, [0x00, 0x82, 0, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual(atk.parseReply([0x82, 3, 1, 0, 0, 0, 0, 0, 83, 1]), { capacity: 83, charging: false });
+  assert.deepEqual(atk.parseReply([0x82, 3, 1, 0, 0, 0, 0, 0, 0x80 | 50, 1]), { capacity: 50, charging: true });
+  assert.equal(atk.parseReply([0x82, 3, 1, 0, 0, 0, 0, 0, 0, 0]).offline, true);
+  assert.equal(atk.parseReply([0x07, 0xa1, 1, 0, 3, 2, 0, 0x1f, 0, 0x65]), null);
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  const nano = { vendorId: 0x373b, productId: 0x1178, channels: [ch(0xff10, 1), ch(1, 2), ch(1, 6), ch(0xff00, 1), ch(0x0c, 1), ch(0xff11, 1)] };
+  assert.equal(detectDriver(nano).id, 'atkHoltek');
+});

@@ -6,6 +6,21 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Added
+
+- Mice on the Keychron / SKN Ultra-Link 8K receiver (issue #164), using the request that
+  keychron-battery-dkms and HaloBattery checked on a Keychron M6 8K.
+- The ATK 8K Nano Dongle and ATK 1K/8K dongles on the Holtek platform (issue #168), read the way
+  ATK's own web driver reads them.
+
+### Fixed
+
+- Attack Shark X11 and other Beken receivers that send `03 55 40` instead of `03 e5 40`
+  (issue #175, pull request #176 by @maxeinstein-dev), and the X11 receiver 1d57:fa55 (issue #88).
+- Classic Bluetooth headsets whose battery Windows keeps on the Hands-Free service now show up
+  (pull request #177 by @maxeinstein-dev).
+- "Open at startup" when the app runs from source (pull request #178 by @maxeinstein-dev).
+
 ## [2.0.5] - 2026-11-24
 
 ### Added
