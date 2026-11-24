@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+## [2.0.5] - 2026-11-24
+
 ### Added
 
 - Corsair Void Wireless v2, HS80 MAX, Virtuoso MAX, Virtuoso SE and Virtuoso XT headsets
@@ -30,7 +32,6 @@ All notable changes to this project are documented here. Versions follow
 - Mice on the same Compx receiver chip as VXE: ATK, MADLIONS and other Compx receivers (issues #6,
   #61, #82, #92, #98, #111, #114, #121, #126, #135, #136). Linux reads one of them (373b:1085) the
   same way.
-
 - "It works! Let the developer know": a device you set up with the scan that reads fine asks
   whether the level is right. A yes opens a filled-in GitHub form, which puts the device on the
   Works with list and helps build it in for everyone.
@@ -44,7 +45,6 @@ All notable changes to this project are documented here. Versions follow
 
 - The scan now also listens on standard collections that carry no movement or keys. Some receivers
   broadcast their battery there, and the scan used to miss it.
-
 - Device reports now include the bytes the scan caught, which is what a battery gets decoded from.
   Before, most only said how many messages came in. A keyboard's typing stays out, and anything
   that looks like an address or serial is masked.
@@ -340,7 +340,8 @@ First stable release, consolidating the 1.0.x and 1.1.x series.
 Initial public release: live battery monitoring for wireless HID devices, per-device tray
 icons, low-battery notifications, history sparklines and the guided calibration wizard.
 
-[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.4...HEAD
+[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.5...HEAD
+[2.0.5]: https://github.com/battery-hub/battery-hub/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/battery-hub/battery-hub/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/battery-hub/battery-hub/compare/v2.0.2...v2.0.3
 [1.3.1]: https://github.com/battery-hub/battery-hub/releases/tag/v1.3.1
