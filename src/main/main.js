@@ -83,7 +83,8 @@ function applyLoginItem() {
   const startMinimized = !!store.getSetting('startMinimized');
   app.setLoginItemSettings({
     openAtLogin,
-    args: startMinimized ? ['--hidden'] : [],
+    // Run from source (electron.exe), Windows must also be told which app folder to open.
+    args: [...(app.isPackaged ? [] : [app.getAppPath()]), ...(startMinimized ? ['--hidden'] : [])],
   });
 }
 
