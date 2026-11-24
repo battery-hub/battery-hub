@@ -102,7 +102,8 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | HyperX | Cloud Alpha Wireless, Cloud Flight, Cloud II Wireless |
 | Corsair | Void, Void Wireless v2, HS80 MAX, Virtuoso, Virtuoso SE, XT and MAX headsets |
 | Audeze | Maxwell, Maxwell 2 |
-| MCHOSE | V9 Turbo+, X9 |
+| Astro | A50 Gen 4 |
+| MCHOSE | V9 Turbo+, V9 PRO, X9 |
 | VXE, ATK | Dragonfly R1 Pro, NordicMouse and other Kysona-based mice |
 | Compx 2.4G receiver | AULA F87 Pro and F99 Pro, Lingbao K98, MCHOSE G75 keyboards |
 

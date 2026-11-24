@@ -232,6 +232,26 @@ const DEVICES = [
     }],
   },
   {
+    // HeadsetControl logitech_astro_a50_gen4 (issue #35): one reply per request, 02 STATUS LEN
+    // PAYLOAD, status 0x02 = ok with payload. The base keeps the last level after the headset is
+    // off, so the link (0x54, bit 1) is asked first. Battery 0x7c: bit 7 charging, the rest percent.
+    name: 'Astro A50 Gen 4', kind: 'headset', vendorId: 0x9886, productIds: [0x002c],
+    channel: { usagePage: 0xff32, usage: 0x74 },
+    steps: [
+      { request: pad([0x02, 0x54, 0x00], 64), parse: (f) => (f.length < 4 || f[0] !== 0x02 || f[1] !== 0x02 ? null : f[3] & 0x02 ? {} : OFFLINE) },
+      { request: pad([0x02, 0x7c, 0x00], 64), parse: (f) => (f.length < 4 || f[0] !== 0x02 || f[1] !== 0x02 ? null : { capacity: clampPercent(f[3] & 0x7f), charging: !!(f[3] & 0x80) }) },
+    ],
+  },
+  {
+    // The X9's protocol behind a C-Media dongle (HeadsetControl mchose_v9_pro, issue #43).
+    name: 'MCHOSE V9 PRO', kind: 'headset', vendorId: 0x291d, productIds: [0x385d],
+    channel: { usagePage: 0xff90 },
+    steps: [{
+      request: pad([0x55, 0x65, 0x01], 64),
+      parse: (f) => (f.length >= 4 && f[0] === 0x55 && f[1] === 0x65 && f[3] === 0x02 ? { capacity: clampPercent(f[2]) } : null),
+    }],
+  },
+  {
     name: 'Logitech G633, G733, G933', kind: 'headset', vendorId: LOGITECH, productIds: [0x0a5c, 0x0a89, 0x0a5b, 0x0a87, 0x0ab5, 0x0afe, 0x0b1f],
     channel: LOGITECH_CHANNEL, steps: [hidppVoltageStep([0x08, 0x0a], G633_CURVE)],
   },

@@ -10,6 +10,7 @@ All notable changes to this project are documented here. Versions follow
 
 - Corsair Void Wireless v2, HS80 MAX, Virtuoso MAX, Virtuoso SE and Virtuoso XT headsets
   (issues #97, #99, #100), using the protocol HeadsetControl documents.
+- MCHOSE V9 PRO (issue #43) and Astro A50 Gen 4 (issue #35) headsets, also from HeadsetControl.
 
 - "It works! Let the developer know": a device you set up with the scan that reads fine asks
   whether the level is right. A yes opens a filled-in GitHub form, which puts the device on the

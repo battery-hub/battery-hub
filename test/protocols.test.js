@@ -431,3 +431,15 @@ test('Corsair Bragi headsets read the battery in tenths, and know a missing head
   assert.equal(se.request.length, 64);
   assert.deepEqual(se.parse(frame([0x01, 0x01, 0x02, 0x00, 0x5a, 0x00])), { capacity: 9 });
 });
+
+test('MCHOSE V9 PRO reads like the X9, and the Astro A50 Gen 4 checks the headset is linked first', () => {
+  const v9 = entry(0x291d, 0x385d).steps[0];
+  assert.deepEqual(v9.request.slice(0, 3), [0x55, 0x65, 0x01]);
+  assert.deepEqual(v9.parse(frame([0x55, 0x65, 0x32, 0x02])), { capacity: 50 });
+  assert.equal(v9.parse(frame([0x55, 0x65, 0x32, 0x05])), null);
+  const [link, level] = entry(0x9886, 0x002c).steps;
+  assert.deepEqual(link.parse(frame([0x02, 0x02, 0x01, 0x02])), {});
+  assert.equal(link.parse(frame([0x02, 0x02, 0x01, 0x00])).offline, true);
+  assert.deepEqual(level.parse(frame([0x02, 0x02, 0x01, 0x80 | 64])), { capacity: 64, charging: true });
+  assert.equal(level.parse(frame([0x02, 0x01, 0x01, 0x00])), null);
+});
