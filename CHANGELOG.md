@@ -16,6 +16,9 @@ All notable changes to this project are documented here. Versions follow
   and Joule, which checked it on both headsets.
 - The ATK 8K Nano Dongle and ATK 1K/8K dongles on the Holtek platform (issue #168), read the way
   ATK's own web driver reads them.
+- MCHOSE G3 A mouse over 2.4 GHz (pull request #198 by @whyolo1, tested on the mouse).
+- SONY INZONE Buds on their USB dongle, with Left, Right and Case levels in the detail view
+  (pull request #199 by @rurute, tested on the buds).
 
 ### Fixed
 
