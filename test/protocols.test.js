@@ -615,6 +615,7 @@ test('G3 A revisions use Gmouse by known ids or branded model name on the vendor
   const realtek = device({ productId: 0x4150, product: 'MCHOSE A5 Ultra' });
   assert.equal(detectDriver(realtek).id, 'mchose-mouse');
 });
+
 test('G3 A checks online status before accepting a receiver battery cached while off', async () => {
   const exchange = require('../src/main/hid/drivers/exchange');
   const original = exchange.exchange;

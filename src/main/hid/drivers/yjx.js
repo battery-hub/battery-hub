@@ -32,6 +32,7 @@ function parseStatus(f) {
   if (f.length < 9 || f[0] !== 0xaa || f[1] !== 0xed || (f[8] !== 1 && f[8] !== 2)) return null;
   return { offline: f[8] === 1 };
 }
+
 function parseReply(f) {
   if (f.length < 10 || f[0] !== 0xaa || f[1] !== 0x30) return null;
   if (f[8] === 0 || f[8] > 100) return { offline: true };
