@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+## [2.0.6] - 2026-11-25
+
 ### Added
 
 - Mice on the Keychron / SKN Ultra-Link 8K receiver (issue #164), using the request that
@@ -372,7 +374,8 @@ First stable release, consolidating the 1.0.x and 1.1.x series.
 Initial public release: live battery monitoring for wireless HID devices, per-device tray
 icons, low-battery notifications, history sparklines and the guided calibration wizard.
 
-[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.5...HEAD
+[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...HEAD
+[2.0.6]: https://github.com/battery-hub/battery-hub/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/battery-hub/battery-hub/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/battery-hub/battery-hub/compare/v2.0.3...v2.0.4
 [2.0.3]: https://github.com/battery-hub/battery-hub/compare/v2.0.2...v2.0.3
