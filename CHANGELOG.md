@@ -19,6 +19,8 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- Redragon M901P-KS and AJAZZ AJ199 mice on Compx receivers 25a7:fa07 and 25a7:fa7c: the receiver
+  answers only through feature reports, so the read failed with "could not read data from device" (#92, #196).
 - Attack Shark X11 and other Beken receivers that send `03 55 40` instead of `03 e5 40`
   (issue #175, pull request #176 by @maxeinstein-dev), and the X11 receiver 1d57:fa55 (issue #88).
 - Classic Bluetooth headsets whose battery Windows keeps on the Hands-Free service now show up

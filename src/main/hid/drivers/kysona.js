@@ -84,7 +84,63 @@ async function readBattery(logicalDevice) {
   throw lastError;
 }
 
+// Some receivers in this family, such as 25a7:fa07 (Redragon M901P-KS, issue #92) and 25a7:fa7c
+// (AJAZZ AJ199, issue #196), have report 8 only as a 17-byte feature report, so the command
+// collection has no input report and every read fails. Those are asked with SetFeature and
+// answered with GetFeature. A path is remembered as feature-only once a read fails there and
+// forgotten again if the feature way fails too.
+const featureOnly = new Set();
+const FEATURE_WAIT_MS = 150;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sameBytes = (a, b) => a.length >= b.length && b.every((x, i) => a[i] === x);
+
 async function readFrom(channel) {
+  if (featureOnly.has(channel.path)) return readByFeature(channel);
+  try {
+    return await readByInput(channel);
+  } catch (e) {
+    if (!/could not read/i.test(e.message)) throw e;
+    featureOnly.add(channel.path);
+    try {
+      return await readByFeature(channel);
+    } catch (featureError) {
+      if (featureError.message === 'mouse is off') throw featureError;
+      throw e; // not a feature-only receiver either: report what went wrong first
+    }
+  }
+}
+
+async function askByFeature(channel, dev, request) {
+  await session.sendFeatureReport(channel.path, dev, request);
+  await sleep(FEATURE_WAIT_MS);
+  const answer = await session.getFeatureReport(channel.path, dev, request[0], FRAME_LENGTH);
+  return sameBytes(answer, request) ? [] : answer; // our own request read back is no answer
+}
+
+async function readByFeature(channel) {
+  try {
+    const dev = await session.acquire(channel.path);
+    const deadline = Date.now() + RESPONSE_TIMEOUT_MS;
+    let offInARow = 0;
+    while (Date.now() < deadline) {
+      const status = parseStatus(await askByFeature(channel, dev, STATUS_REQUEST));
+      if (status === false) {
+        if (++offInARow >= OFF_ANSWERS) throw new Error('mouse is off');
+      } else {
+        offInARow = 0;
+        const reading = parseFrame(await askByFeature(channel, dev, BATTERY_REQUEST));
+        if (reading) return reading;
+      }
+      await sleep(REPOKE_MS);
+    }
+    throw new Error('timeout waiting for battery response');
+  } catch (e) {
+    if (e.message !== 'mouse is off') featureOnly.delete(channel.path);
+    throw e;
+  }
+}
+
+async function readByInput(channel) {
   const dev = await session.acquire(channel.path);
   await session.readQueued(channel.path, dev); // a late reply to an old request is stale
 

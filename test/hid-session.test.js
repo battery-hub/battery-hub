@@ -44,7 +44,16 @@ class FakeDevice {
   getFeatureReport() {
     return this.track(() => {
       if (this.featureError) throw this.featureError;
+      if (this.features) return Buffer.from(this.features.shift() || this.lastFeatureSent || []);
       return Buffer.from(this.feature);
+    });
+  }
+
+  sendFeatureReport(bytes) {
+    return this.track(() => {
+      this.featuresSent = (this.featuresSent || []).concat([bytes[1]]);
+      this.lastFeatureSent = bytes;
+      return bytes.length;
     });
   }
 
@@ -128,6 +137,21 @@ test('kysona: a battery answer wins over a stale "no mouse"', async () => {
   assert.equal((await kysona.readBattery(logical)).capacity, 90);
 });
 
+test('kysona: a receiver whose command report is a feature report is asked with feature reports (#92, #196)', async () => {
+  const { dev, logical } = mouse();
+  dev.reads = [new Error('could not read data from device')];
+  dev.features = [statusOn(), reply(80).concat(new Array(7).fill(0))];
+  assert.equal((await kysona.readBattery(logical)).capacity, 80);
+  assert.deepEqual(dev.featuresSent, [0x03, 0x04]);
+});
+
+test('kysona: on a feature-only receiver, our own request read back is not taken for "no mouse"', async () => {
+  const { dev, logical } = mouse();
+  dev.reads = [new Error('could not read data from device')];
+  dev.features = [null, null, statusOn(), reply(64).concat(new Array(7).fill(0))];
+  assert.equal((await kysona.readBattery(logical)).capacity, 64);
+});
+
 test('kysona: status answers are checked like Linux checks them', () => {
   assert.equal(kysona.parseStatus(statusOn()), true);
   assert.equal(kysona.parseStatus(statusOff()), false);
@@ -182,8 +206,10 @@ test('kysona: a rejected write fails the read, keeps the handle and stops writin
 test('a failed read closes the handle, and the next poll opens a fresh one', async () => {
   const { dev, logical } = mouse();
   dev.reads = [new Error('could not read data from device')];
+  dev.featureError = new Error('could not get feature report'); // not a feature-only receiver either
   await assert.rejects(kysona.readBattery(logical), /could not read/);
-  assert.equal(dev.closes, 1, 'a failed read leaves nothing pending, so this close is safe');
+  assert.equal(dev.closes, 2, 'a failed read or feature report leaves nothing pending, so these closes are safe');
+  dev.featureError = null;
 
   const opensBefore = opens;
   dev.reads = [[], reply(30)];
