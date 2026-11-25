@@ -202,7 +202,7 @@ function ruDiagnosticAgo(text) {
 }
 
 const RU_PATTERNS = [
-  [/^All (\d+) files match what was shipped\.$/, (m) => `Все ${m[1]} файлов соответствуют исходной поставке.`],
+  [/^All (\d+) files match what was shipped\.$/, (m) => `${m[1]} ${ruPlural(m[1], 'файл соответствует', 'файла соответствуют', 'файлов соответствуют')} исходной поставке.`],
   [/^(\d+) of (\d+) files are missing or changed\.$/, (m) => `${m[1]} из ${m[2]} файлов отсутствуют или изменены.`],
   [/^You have (\S+), the latest version\.$/, (m) => `Установлена актуальная версия ${m[1]}.`],
   [/^You have (\S+)\. The latest is (\S+)\.$/, (m) => `Установлена версия ${m[1]}. Последняя версия — ${m[2]}.`],
