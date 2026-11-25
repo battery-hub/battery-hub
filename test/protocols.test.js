@@ -569,6 +569,15 @@ test('HyperX Cloud III, Cloud II Core and Cloud III S read the way auto94 docume
   assert.deepEqual(s.parse(frame([0x0c, 0x02, 0x03, 0x01, 0x00, 0x06, 40])), { capacity: 40 });
   assert.equal(s.parse(frame([0x0c, 0x02, 0x03, 0x01, 0x00, 0x06, 0xff])).offline, true);
   assert.ok(entry(0x03f0, 0x0d93)); // Cloud Stinger 2 Wireless
+  { // #206: its collection is not on interface 0, and its reports are 20 bytes
+    const stinger = entry(0x03f0, 0x0d93);
+    assert.equal(stinger.name, 'HyperX Cloud Stinger 2 Wireless');
+    assert.equal(stinger.channel.interface, undefined);
+    assert.equal(stinger.steps[0].request.length, 20);
+    const reply = [0x06, 0xff, 0xbb, 0x02, 0, 0, 0, 87, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    assert.deepEqual(stinger.steps[0].parse(reply), { capacity: 87 });
+    assert.equal(entry(0x03f0, 0x018b).channel.interface, 0);
+  }
 });
 
 test('YJX-chip receivers answer the gmouse battery request on 0xFF01/0x0010', () => {

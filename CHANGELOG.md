@@ -12,6 +12,8 @@ All notable changes to this project are documented here. Versions follow
   correct plural forms (pull request #215 by @Dfavorit55).
 - Compx receivers that still failed in 2.0.6 (Redragon M901P-KS, issue #92): the other vendor channels are
   tried too, a feature-report answer is waited for a little longer, and the error says what each channel answered.
+- HyperX Cloud Stinger 2 Wireless wasn't recognised (issue #206): it was looked for on the Cloud II's interface,
+  and is now its own entry, under its own name, with its 20-byte requests.
 
 ## [2.0.6] - 2026-11-25
 

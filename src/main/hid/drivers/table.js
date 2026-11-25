@@ -62,9 +62,9 @@ const KINGSTON = 0x0951;
 const CLOUD_FLIGHT_CHARGING_MV = 0x100b;
 const CLOUD_FLIGHT_CURVE = curve([3975, 3900, 3800, 3700, 3648, 0], [100, 80, 50, 25, 8, 0]);
 
-function cloud2Step(command, parse) {
+function cloud2Step(command, parse, length = 52) {
   return {
-    request: pad([0x06, 0xff, 0xbb, command, 0x00], 52),
+    request: pad([0x06, 0xff, 0xbb, command, 0x00], length),
     parse(f) {
       if (f.length < 8 || f[0] !== 0x06 || f[1] !== 0xff || f[2] !== 0xbb || f[3] !== command) return null;
       return parse(f);
@@ -219,12 +219,23 @@ const DEVICES = [
     steps: [{ request: pad([0x0c, 0x02, 0x03, 0x01, 0x00, 0x06], 52), parse: (f) => (f.length < 7 || f[0] !== 0x0c || f[5] !== 0x06 ? null : f[6] > 100 ? OFFLINE : { capacity: f[6] }) }],
   },
   {
-    // 0x0d93 is the Cloud Stinger 2 Wireless, which auto94's HyperX-Cloud-2-Battery-Monitor reads the same way.
-    name: 'HyperX Cloud II Wireless', kind: 'headset', vendorId: HP, productIds: [0x0696, 0x018b, 0x0d93],
+    name: 'HyperX Cloud II Wireless', kind: 'headset', vendorId: HP, productIds: [0x0696, 0x018b],
     channel: { usagePage: 0xff90, usage: 0x0303, interface: 0 },
     steps: [
       cloud2Step(0x02, (f) => ({ capacity: clampPercent(f[7]) })),
       cloud2Step(0x03, (f) => ({ charging: f[4] === 1 })),
+    ],
+  },
+  {
+    // Read like the Cloud II Wireless (auto94's HyperX-Cloud-2-Battery-Monitor, HyperHeadset), but its
+    // 0xFF90/0x0303 collection is not on interface 0, so the Cloud II entry never matched it (issue #206).
+    // HyperHeadset probes every interface on Windows for the same reason.
+    // Its reports are 20 bytes long (the scan in #206 and HyperHeadset's packets), not 52.
+    name: 'HyperX Cloud Stinger 2 Wireless', kind: 'headset', vendorId: HP, productIds: [0x0d93],
+    channel: { usagePage: 0xff90, usage: 0x0303 },
+    steps: [
+      cloud2Step(0x02, (f) => ({ capacity: clampPercent(f[7]) }), 20),
+      cloud2Step(0x03, (f) => ({ charging: f[4] === 1 }), 20),
     ],
   },
   {
