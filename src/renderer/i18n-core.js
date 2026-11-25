@@ -191,19 +191,45 @@ function ruPlural(n, one, few, many) {
   if (mod10 >= 2 && mod10 <= 4) return few;
   return many;
 }
+// Localized relative-time descriptions used by Windows diagnostics.
+function ruDiagnosticAgo(text) {
+  if (text === 'just now') return 'только что';
+  const match = text.match(/^(\d+) (min|h|days) ago$/);
+  if (!match) return text;
+  const count = match[1];
+  const units = match[2] === 'days' ? ruPlural(count, 'день', 'дня', 'дней') : match[2] === 'h' ? 'ч' : 'мин';
+  return `${count} ${units} назад`;
+}
+
 const RU_PATTERNS = [
-  [/^Scan failed: (.+)$/, (m) => `Ошибка сканирования: ${m[1]}`],
+  [/^All (\d+) files match what was shipped\.$/, (m) => `Все ${m[1]} файлов соответствуют исходной поставке.`],
+  [/^(\d+) of (\d+) files are missing or changed\.$/, (m) => `${m[1]} из ${m[2]} файлов отсутствуют или изменены.`],
+  [/^You have (\S+), the latest version\.$/, (m) => `Установлена актуальная версия ${m[1]}.`],
+  [/^You have (\S+)\. The latest is (\S+)\.$/, (m) => `Установлена версия ${m[1]}. Последняя версия — ${m[2]}.`],
+  [/^You have (\S+)\. Couldn't reach GitHub to compare\.$/, (m) => `Установлена версия ${m[1]}. Не удалось подключиться к GitHub для проверки.`],
+  [/^Working: found (\d+) devices? in (\d+) ms\.$/, (m) => `Работает: найдено ${m[1]} ${ruPlural(m[1], 'устройство', 'устройства', 'устройств')} за ${m[2]} мс.`],
+  [/^Working: Windows has a battery reading for (\d+) devices?\.$/, (m) => `Работает: Windows получает данные о заряде ${m[1]} ${ruPlural(m[1], 'устройства', 'устройств', 'устройств')}.`],
+  [/^(\d+) in the last week\.$/, (m) => `${m[1]} за последнюю неделю.`],
+  [/^Last read (.+)\.$/, (m) => `Последние данные: ${ruDiagnosticAgo(m[1])}.`],
+  [/^Didn't answer, so it may be asleep\. Last read (.+)\.$/, (m) => `Устройство не отвечает, возможно, оно спит. Последние данные: ${ruDiagnosticAgo(m[1])}.`],
+  [/^Can't read it: (.+)$/, (m) => `Не удаётся получить данные: ${bhTranslate(m[1], 'ru')}.`],
+  [/^The form couldn't be opened: (.+)$/, (m) => `Не удалось открыть форму: ${bhTranslate(m[1], 'ru')}`],
+  [/^Opens GitHub with the device filled in, so it can be listed and built in for everyone\. Nothing is posted until you submit it there\. (.+)$/, (m) => `Откроется GitHub с заполненной формой устройства, чтобы его могли добавить в общую базу. Ничего не будет опубликовано до отправки формы. ${bhTranslate(m[1], 'ru')}`],
+  [/^The scan takes (\d+) seconds\. While it runs, turn the device off and on once or twice, because many devices only report their battery at power on\. If the device has its own app, keep it open\.$/, (m) => `Сканирование длится ${m[1]} ${ruPlural(m[1], 'секунду', 'секунды', 'секунд')}. За это время выключите и снова включите устройство один или два раза: некоторые устройства передают заряд только при включении. Если у устройства есть своя программа, не закрывайте её.`],
+  [/^Battery from (\d+)% to (\d+)%, between (\d+)% and (\d+)%\. Use the arrow keys to read each point\.$/, (m) => `Заряд изменился с ${m[1]}% до ${m[2]}%, диапазон — от ${m[3]}% до ${m[4]}%. Используйте клавиши со стрелками для просмотра точек графика.`],
+  [/^(Opens GitHub with the report filled in|Your browser opened with the report filled in)\. Nothing is posted until you submit it there\. You need a free GitHub account\. Issues are public, so your user name, device serials and Bluetooth details are left out\.( This report is too long for a link, so the full version is also copied for you to paste in\.)?$/, (m) => (m[1].startsWith('Opens') ? 'Откроется GitHub с подготовленным отчётом.' : 'В браузере открыт GitHub с подготовленным отчётом.') + ' Ничего не будет опубликовано, пока вы не отправите отчёт. Для отправки нужен бесплатный аккаунт GitHub. Обращения общедоступны, поэтому имя пользователя, серийные номера и данные Bluetooth исключены.' + (m[2] ? ' Отчёт слишком длинный для ссылки, поэтому полный текст скопирован в буфер обмена.' : '')],
+  [/^Scan failed: (.+)$/, (m) => `Ошибка сканирования: ${bhTranslate(m[1], 'ru')}`],
   [/^Channel 0x([0-9a-fA-F]+), (input|output|feature) report (\d+), seen (\d+) times$/, (m) => {
     const kind = { input: 'входящий', output: 'исходящий', feature: 'служебный' }[m[2]];
     return `Канал 0x${m[1]}, ${kind} отчёт ${m[3]}, получен ${m[4]} ${ruPlural(m[4], 'раз', 'раза', 'раз')}`;
   }],
   [/^Open report #(\d+)$/, (m) => `Открыть отчёт №${m[1]}`],
-  [/^(.+) This problem may already be fixed\. Update, then scan again\.$/, (m) => `${m[1]} Возможно, проблему уже исправили. Обновите программу и повторите сканирование.`],
+  [/^(.+) This problem may already be fixed\. Update, then scan again\.$/, (m) => `${bhTranslate(m[1], 'ru')} Возможно, проблему уже исправили. Обновите программу и повторите сканирование.`],
   [/^Someone with the same device opened report #(\d+)\. Add yours to it instead of starting a new one\.$/, (m) => `Для такого устройства уже есть обращение №${m[1]}. Добавьте информацию туда, а не создавайте новое.`],
   [/^This device was looked at in report #(\d+), which has the answer\. Add yours there if something changed\.$/, (m) => `Устройство уже рассматривали в обращении №${m[1]}. Если появились новые сведения, добавьте их туда.`],
   [/^Battery Hub opened a report on it (.+)\. Add anything new as a comment there\.$/, (m) => `Battery Hub создал обращение ${m[1]}. Новые сведения можно добавить в комментарий.`],
-  [/^The report couldn't be made: (.+)$/, (m) => `Не удалось подготовить отчёт: ${m[1]}`],
-  [/^The check couldn't finish: (.+)$/, (m) => `Не удалось завершить проверку: ${m[1]}`],
+  [/^The report couldn't be made: (.+)$/, (m) => `Не удалось подготовить отчёт: ${bhTranslate(m[1], 'ru')}`],
+  [/^The check couldn't finish: (.+)$/, (m) => `Не удалось завершить проверку: ${bhTranslate(m[1], 'ru')}`],
   [/^Updated (\d+[dhms]) ago$/, (m) => `Обновлено ${duration(m[1], 'ru')} назад`],
   [/^(\d+[dhms]) ago$/, (m) => `${duration(m[1], 'ru')} назад`],
   [/^~((?:\d+[dhm] ?)+) left$/, (m) => `Осталось примерно ${duration(m[1], 'ru')}`],
