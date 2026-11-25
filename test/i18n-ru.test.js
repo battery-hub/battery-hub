@@ -8,14 +8,31 @@ const { bhTranslate, resolveLanguage } = require('../src/renderer/i18n-core');
 const tr = (text) => bhTranslate(text, 'ru');
 const renderer = path.join(__dirname, '../src/renderer');
 
-test('Russian contains all shared strings and all localized Help strings', () => {
-  for (const lang of ['es', 'zh', 'he', 'pt']) {
-    for (const key of Object.keys(BH_STRINGS[lang])) {
-      assert.ok(Object.hasOwn(BH_STRINGS.ru, key), 'Missing Russian translation: ' + key);
-    }
-  }
+// Russian works like es, zh and he (#217): it must keep the texts every language has, and every
+// text it already translates (i18n-ru-keys.json, so a translation can't be lost by accident). A new
+// text with no Russian is not required: it shows in English until someone translates it. When you
+// add Russian for a text, you may add its key to i18n-ru-keys.json to protect it too.
+const RU_KEYS = require('./i18n-ru-keys.json');
+function missingRussian() {
+  const required = new Set([...Object.keys(BH_STRINGS.es), ...RU_KEYS]);
+  return [...required].filter((key) => !Object.hasOwn(BH_STRINGS.ru, key));
+}
+
+test('Russian keeps the texts every language has and every text it already translates', () => {
+  assert.deepEqual(missingRussian(), [], 'Missing Russian translations');
   for (const [key, value] of Object.entries(BH_STRINGS.ru)) {
     assert.ok(value && value.trim(), 'Empty Russian translation: ' + key);
+  }
+});
+
+test('a new text with no Russian is not required: it shows in English, as in es, zh and he', () => {
+  // A contributor adds a text and translates it only into Portuguese (#217).
+  BH_STRINGS.pt['A brand new sentence for the test.'] = 'Uma frase nova para o teste.';
+  try {
+    assert.deepEqual(missingRussian(), []);
+    assert.equal(tr('A brand new sentence for the test.'), 'A brand new sentence for the test.');
+  } finally {
+    delete BH_STRINGS.pt['A brand new sentence for the test.'];
   }
 });
 
@@ -80,38 +97,4 @@ test('Russian translates GitHub report notes and scan error reasons', () => {
   for (const english of examples) assert.notEqual(tr(english), english, english);
   assert.match(tr('Scan failed: This device is no longer saved'), /Это устройство больше не сохранено/);
   assert.match(tr('Channel 0xff00, input report 85, seen 3 times'), /3 раза/);
-});
-
-test('all fixed texts in Russian renderer have translations', () => {
-  const files = ['index.html', 'flyout.html', 'app.js', 'detail.js', 'support.js', 'flyout.js'];
-  const ignore = new Set(['Enter', 'Escape', 'Home', 'End', 'Tab', 'Battery Hub', 'English', 'Español', 'Português (Brasil)', 'Русский', '中文', 'עברית']);
-  const squash = (text) => text.replace(/\s+/g, ' ').trim();
-  const covered = (text) => tr(text) !== text || Object.hasOwn(BH_STRINGS.ru, squash(text));
-  function htmlTexts(html) {
-    const input = html.replace(/<(script|style)[\s\S]*?<\/\1>/g, '').replace(/\$\{(?:[^{}]|\{[^{}]*\})*\}/g, '\u0001');
-    const results = [];
-    for (const m of input.matchAll(/>([^<>]+)</g)) results.push(squash(m[1]));
-    for (const m of input.matchAll(/(?:title|placeholder|aria-label|alt)="([^"]+)"/g)) results.push(squash(m[1]));
-    return results.filter((t) => /[A-Za-z]{2}/.test(t) && !ignore.has(t) && !t.includes('\u0001'));
-  }
-  for (const filename of files) {
-    const source = fs.readFileSync(path.join(renderer, filename), 'utf8');
-    if (filename.endsWith('.html')) {
-      const missing = [...new Set(htmlTexts(source).filter(t => !covered(t)))];
-      assert.deepEqual(missing, [], filename + ' untranslated');
-      continue;
-    }
-    const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
-    const re = /'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\]|\\.)*)`/g;
-    let m, literals = [];
-    while ((m = re.exec(withoutComments))) {
-      const value = (m[1] ?? m[2] ?? m[3]).replace(/\\'/g, "'").replace(/\\"/g, '"');
-      literals.push(value);
-      if (/<[a-z/]/i.test(value)) literals.push(...htmlTexts(value));
-    }
-    const missing = [...new Set(literals.filter(t =>
-      !t.includes('${') && !t.includes('<') && /^[A-Z]/.test(t) && /[a-z]{2}/.test(t) &&
-      !/[=;{}]/.test(t) && !ignore.has(t) && !covered(t)))];
-    assert.deepEqual(missing, [], filename + ' untranslated');
-  }
 });
