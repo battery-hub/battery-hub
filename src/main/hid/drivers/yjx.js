@@ -12,10 +12,26 @@ const REQUEST = pad([0x00, 0x55, 0x30, 0xa5, 0x0b, 0x2e, 0x01, 0x01, 0x01], 65);
 
 const channelOf = (d) => d.channels.find((c) => c.usagePage === 0xff01 && c.usage === 0x10);
 
-function matches(logicalDevice) {
-  return VENDORS.has(logicalDevice.vendorId) && !!channelOf(logicalDevice);
+function isG3a(logicalDevice) {
+  const { vendorId, productId, product = '', manufacturer = '' } = logicalDevice;
+  const name = product.replace(/[_\s]+/g, ' ');
+  const mchose = vendorId === 0x3837 || vendorId === 0xa8a4 || vendorId === 0xa8a5
+    || /mchose|迈从/i.test(manufacturer + ' ' + name);
+  // G3 A revisions share Gmouse, but can have different receiver product ids.
+  return (vendorId === 0x3837 && productId === 0x4245)
+    || (vendorId === 0xa8a5 && productId === 0x2255)
+    || (mchose && /\bg3\s*a\b/i.test(name));
 }
 
+function matches(logicalDevice) {
+  return (VENDORS.has(logicalDevice.vendorId) || isG3a(logicalDevice)) && !!channelOf(logicalDevice);
+}
+
+// The receiver keeps returning its last battery reading after the mouse switches off.
+function parseStatus(f) {
+  if (f.length < 9 || f[0] !== 0xaa || f[1] !== 0xed || (f[8] !== 1 && f[8] !== 2)) return null;
+  return { offline: f[8] === 1 };
+}
 function parseReply(f) {
   if (f.length < 10 || f[0] !== 0xaa || f[1] !== 0x30) return null;
   if (f[8] === 0 || f[8] > 100) return { offline: true };
@@ -27,6 +43,10 @@ async function readBattery(logicalDevice) {
   if (!channel) throw new Error('no command channel');
   let reading;
   try {
+    if (isG3a(logicalDevice)) {
+      const status = await exchange(channel, pad([0x00, 0x55, 0xed], 65), parseStatus);
+      if (status.offline) throw new Error('mouse is off');
+    }
     reading = await exchange(channel, REQUEST, parseReply);
   } catch (e) {
     if (/^timeout/.test(e.message)) throw new Error('mouse is not answering');
@@ -36,4 +56,4 @@ async function readBattery(logicalDevice) {
   return reading;
 }
 
-module.exports = { id: 'yjx', matches, readBattery, parseReply, REQUEST };
+module.exports = { id: 'yjx', matches, readBattery, parseReply, parseStatus, REQUEST };
