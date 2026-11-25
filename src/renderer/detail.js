@@ -49,7 +49,7 @@ function pointsToPath(points) {
 }
 
 // Dates in the app's language rather than Windows'.
-const dateLocale = () => ({ es: 'es-ES', zh: 'zh-CN', he: 'he-IL' })[window.bhLanguage && window.bhLanguage()] || undefined;
+const dateLocale = () => ({ es: 'es-ES', zh: 'zh-CN', he: 'he-IL', pt: 'pt-BR' })[window.bhLanguage && window.bhLanguage()] || undefined;
 
 function formatTick(ts, range) {
   const d = new Date(ts);
