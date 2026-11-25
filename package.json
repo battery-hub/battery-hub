@@ -51,7 +51,8 @@
       "zh-TW",
       "he",
       "pt-BR",
-      "pt-PT"
+      "pt-PT",
+      "ru"
     ],
     "win": {
       "target": "nsis",

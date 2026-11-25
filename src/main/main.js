@@ -103,6 +103,7 @@ function broadcast(deviceState) {
         charging: !!(reading && reading.charging) && deviceState.online !== false,
         offline: deviceState.online === false,
         offLabel: offLabel(deviceState),
+        readAt: deviceState.lastReadingAt || null,
         product: deviceState.product,
         driverId: deviceState.driverId,
         customIcon: deviceState.customIcon,
@@ -215,8 +216,12 @@ function quitApp() {
   app.quit();
 }
 
-// Surface renderer/GPU/utility process crashes so a blanked window leaves a trail.
-app.on('render-process-gone', (e, wc, details) => logLine('FATAL', `render-process-gone: ${JSON.stringify(details)}`));
+// Surface renderer/GPU/utility process crashes so a blanked window leaves a trail. Not while Windows
+// is ending the session (shutdown, restart, sign-out): it stops every process then, and those aren't
+// crashes. The support check also skips a whole-app end it finds in the log (diagnostics.js).
+let sessionEnding = false;
+app.on('session-end', () => { sessionEnding = true; logLine('INFO', 'Windows is ending the session'); });
+app.on('render-process-gone', (e, wc, details) => { if (!sessionEnding) logLine('FATAL', `render-process-gone: ${JSON.stringify(details)}`); });
 // The app only ever shows its own pages, so nothing in a window may go to a website or open a new
 // one. Links meant for the browser go through app:open-external.
 app.on('web-contents-created', (e, contents) => {
@@ -224,7 +229,7 @@ app.on('web-contents-created', (e, contents) => {
   contents.setWindowOpenHandler(() => ({ action: 'deny' }));
 });
 
-app.on('child-process-gone', (e, details) => logLine('ERROR', `child-process-gone: ${JSON.stringify(details)}`));
+app.on('child-process-gone', (e, details) => { if (!sessionEnding) logLine('ERROR', `child-process-gone: ${JSON.stringify(details)}`); });
 
 app.whenReady().then(() => {
   logLine('INFO', `app ready (v${app.getVersion()}) — logging to ${LOG_FILE}`);
@@ -346,11 +351,20 @@ ipcMain.handle('devices:set-hidden', (evt, { id, hidden }) => {
   return saved;
 });
 
+// A Cancel can come while the device is still being looked up, before the scan itself exists, so
+// it is remembered here as well as sent to the scan.
+let captureCancelled = false;
 ipcMain.handle('devices:capture', (evt, id) => poller.withPollingPaused(async () => {
+  captureCancelled = false;
   const live = (await hidClient.enumerate()).find((d) => d.id === id);
+  if (captureCancelled) return [];
   if (!live) throw new Error('device not connected');
   return hidClient.capture(live);
 }));
+ipcMain.handle('devices:cancel-capture', () => {
+  captureCancelled = true;
+  return hidClient.cancelCapture();
+});
 
 ipcMain.handle('devices:poll-now', async () => {
   const results = [];

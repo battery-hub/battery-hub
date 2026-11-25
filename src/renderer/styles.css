@@ -649,7 +649,9 @@ html, body {
 .scan-live-head { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-bottom: 14px; }
 .scan-progress { height: 8px; border-radius: 999px; background: var(--hover-fill); overflow: hidden; }
 .scan-bar { height: 100%; width: 0; border-radius: 999px; background: var(--green); transition: width 0.15s linear; }
-.scan-remaining { margin-top: 8px; font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.scan-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.scan-foot .btn { padding-top: 6px; padding-bottom: 6px; font-size: 12px; }
+.scan-remaining { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 
 /* ---------- settings ---------- */
 .settings-group-title {
@@ -731,6 +733,9 @@ html, body {
 .segmented button:hover { color: var(--text); }
 .segmented button:active { transform: scale(0.92); }
 .segmented button.active { color: var(--text); }
+/* Keep short Russian segment labels on one line without changing other locales. */
+html[lang="ru"] .segmented button { white-space: nowrap; padding-inline: 8px; }
+html[lang="ru"] .settings-label { min-width: 0; }
 
 
 

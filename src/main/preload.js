@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('batteryHub', {
   setDeviceHidden: (id, hidden) => ipcRenderer.invoke('devices:set-hidden', { id, hidden }),
   reorderDevices: (ids) => ipcRenderer.invoke('devices:reorder', ids),
   capture: (id) => ipcRenderer.invoke('devices:capture', id),
+  cancelCapture: () => ipcRenderer.invoke('devices:cancel-capture'),
   pollNow: () => ipcRenderer.invoke('devices:poll-now'),
   onBatteryUpdate: (cb) => {
     const listener = (evt, data) => cb(data);

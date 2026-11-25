@@ -20,8 +20,8 @@
   }
 
   function attrs(el) {
-    // A text box's placeholder and label are the app's text, even though what is typed in it is not.
-    if (!el || (el.closest && el.closest('[data-no-translate]'))) return;
+    // Form values are user input, but placeholder and aria-label are translatable UI attributes.
+    if (!el || el.nodeName === 'SCRIPT' || el.nodeName === 'STYLE' || (el.closest && el.closest('[data-no-translate]'))) return;
     el.bhAttrs = el.bhAttrs || {};
     for (const name of ATTRS) {
       const value = el.getAttribute(name);

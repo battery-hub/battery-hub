@@ -3,13 +3,14 @@
 // unknown comes back unchanged, so a missing translation shows English rather than nothing.
 // Pure: loaded as a plain script by the windows (after i18n-strings.js) and required by the main
 // process for the tray and notifications.
-const BH_LANGS = ['en', 'es', 'zh', 'he', 'pt'];
+const BH_LANGS = ['en', 'es', 'zh', 'he', 'pt', 'ru'];
 
 // 'system' or a missing setting follows the Windows display language.
 function resolveLanguage(setting, locale) {
   if (BH_LANGS.includes(setting)) return setting;
   const l = String(locale || '').toLowerCase();
   if (l.startsWith('es')) return 'es';
+  if (l.startsWith('ru')) return 'ru';
   if (l.startsWith('zh')) return 'zh';
   if (l.startsWith('he') || l.startsWith('iw')) return 'he';
   if (/^pt(?:[-_]|$)/.test(l)) return 'pt'; // pt-BR, and pt-PT too: better than English
@@ -22,6 +23,7 @@ const UNITS = {
   zh: { d: '天', h: '小时', m: '分钟', s: '秒' },
   he: { d: ' ימ׳', h: ' שע׳', m: ' דק׳', s: ' שנ׳' },
   pt: { d: ' d', h: ' h', m: ' min', s: ' s' },
+  ru: { d: ' дн.', h: ' ч', m: ' мин', s: ' сек.' },
 };
 function duration(text, lang) {
   return text.replace(/(\d+)([dhms])\b/g, (all, n, unit) => n + UNITS[lang][unit]);
@@ -179,6 +181,49 @@ const PATTERNS = [
   }],
 ];
 
+// Russian dynamic translations with correct plural forms for counts.
+function ruPlural(n, one, few, many) {
+  const v = Math.abs(Number(n));
+  const mod100 = v % 100;
+  if (mod100 >= 11 && mod100 <= 14) return many;
+  const mod10 = v % 10;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+}
+const RU_PATTERNS = [
+  [/^Scan failed: (.+)$/, (m) => `Ошибка сканирования: ${m[1]}`],
+  [/^Channel 0x([0-9a-fA-F]+), (input|output|feature) report (\d+), seen (\d+) times$/, (m) => {
+    const kind = { input: 'входящий', output: 'исходящий', feature: 'служебный' }[m[2]];
+    return `Канал 0x${m[1]}, ${kind} отчёт ${m[3]}, получен ${m[4]} ${ruPlural(m[4], 'раз', 'раза', 'раз')}`;
+  }],
+  [/^Open report #(\d+)$/, (m) => `Открыть отчёт №${m[1]}`],
+  [/^(.+) This problem may already be fixed\. Update, then scan again\.$/, (m) => `${m[1]} Возможно, проблему уже исправили. Обновите программу и повторите сканирование.`],
+  [/^Someone with the same device opened report #(\d+)\. Add yours to it instead of starting a new one\.$/, (m) => `Для такого устройства уже есть обращение №${m[1]}. Добавьте информацию туда, а не создавайте новое.`],
+  [/^This device was looked at in report #(\d+), which has the answer\. Add yours there if something changed\.$/, (m) => `Устройство уже рассматривали в обращении №${m[1]}. Если появились новые сведения, добавьте их туда.`],
+  [/^Battery Hub opened a report on it (.+)\. Add anything new as a comment there\.$/, (m) => `Battery Hub создал обращение ${m[1]}. Новые сведения можно добавить в комментарий.`],
+  [/^The report couldn't be made: (.+)$/, (m) => `Не удалось подготовить отчёт: ${m[1]}`],
+  [/^The check couldn't finish: (.+)$/, (m) => `Не удалось завершить проверку: ${m[1]}`],
+  [/^Updated (\d+[dhms]) ago$/, (m) => `Обновлено ${duration(m[1], 'ru')} назад`],
+  [/^(\d+[dhms]) ago$/, (m) => `${duration(m[1], 'ru')} назад`],
+  [/^~((?:\d+[dhm] ?)+) left$/, (m) => `Осталось примерно ${duration(m[1], 'ru')}`],
+  [/^~((?:\d+[dhm] ?)+)$/, (m) => `≈${duration(m[1], 'ru')}`],
+  [/^([\d.]+)% a day$/, (m) => `${m[1]}% в день`],
+  [/^([\d.]+)% an hour$/, (m) => `${m[1]}% в час`],
+  [/^Same as Settings \((\d+)%\)$/, (m) => `Как в настройках (${m[1]}%)`],
+  [/^Charging, (\d+)%$/, (m) => `Заряжается, ${m[1]}%`],
+  [/^(\d+) hidden devices?$/, (m) => `${m[1]} ${ruPlural(m[1], 'скрытое устройство', 'скрытых устройства', 'скрытых устройств')}`],
+  [/^(.*) · (\d+) channels?$/, (m) => `${m[1]} · ${m[2]} ${ruPlural(m[2], 'канал', 'канала', 'каналов')}`],
+  [/^Version (\S+)$/, (m) => `Версия ${m[1]}`],
+  [/^Update available: (v\S+)$/, (m) => `Доступно обновление: ${m[1]}`],
+  [/^Update ready: (v\S+)$/, (m) => `Обновление готово: ${m[1]}`],
+  [/^Set up (.+)$/, (m) => `Настроить ${m[1]}`],
+  [/^(.+): open details$/, (m) => `${m[1]}: открыть сведения`],
+  [/^(.+) is at (\d+)%\. Time to charge\.$/, (m) => `Устройство «${m[1]}»: заряд ${m[2]}%. Пора заряжать.`],
+  [/^(.+) is charging \((\d+)%\)\.$/, (m) => `Устройство «${m[1]}» заряжается (${m[2]}%).`],
+  [/^(.+) is charged \((\d+)%\)\.$/, (m) => `Устройство «${m[1]}» заряжено (${m[2]}%).`],
+];
+
 function bhTranslate(text, lang) {
   if (lang === 'en' || text == null) return text;
   const s = String(text);
@@ -186,13 +231,20 @@ function bhTranslate(text, lang) {
   if (!trimmed) return s;
   const table = (typeof BH_STRINGS !== 'undefined' ? BH_STRINGS : require('./i18n-strings').BH_STRINGS)[lang];
   if (!table) return s;
-  // A sentence the source wraps over several lines reaches us with its line breaks and indentation.
-  const key = trimmed.replace(/\s+/g, ' ');
-  let out = table[key];
+  // Collapse internal whitespace for strings split across multiple source lines.
+  const normalized = trimmed.replace(/\s+/g, ' ');
+  let out = table[trimmed];
+  if (out === undefined && normalized !== trimmed) out = table[normalized];
   if (out === undefined) {
     for (const [re, forms] of PATTERNS) {
-      const m = key.match(re);
+      const m = normalized.match(re);
       if (m && forms[lang]) { out = forms[lang](m, lang); break; }
+    }
+  }
+  if (out === undefined && lang === 'ru') {
+    for (const [re, format] of RU_PATTERNS) {
+      const m = normalized.match(re);
+      if (m) { out = format(m); break; }
     }
   }
   if (out === undefined) return s;
