@@ -192,6 +192,23 @@
               </div>
               <button class="toggle" data-setting="notifyCharged" role="switch"><span class="toggle-knob"></span></button>
             </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Old reading alert</span>
+                <span class="settings-hint">Notify when a device's last reading gets old, for devices read only now and then. Each device can turn it off or set its own days.</span>
+              </div>
+              <button class="toggle" data-setting="notifyStale" role="switch"><span class="toggle-knob"></span></button>
+            </div>
+            <div class="settings-row" data-depends="notifyStale">
+              <div class="settings-label">
+                <span class="settings-title">Old after</span>
+                <span class="settings-hint">Alert when the last reading is older than this.</span>
+              </div>
+              <div class="stepper">
+                <input type="number" data-setting="notifyStaleDays" min="1" max="14" step="1" aria-label="Days" />
+                <span class="stepper-unit">days</span>
+              </div>
+            </div>
           </div>
 
           <div id="local-tools"></div>
@@ -336,8 +353,9 @@
         <div class="chart-head">
           <h3>Old reading alert</h3>
           <div class="segmented" id="detail-stale-mode">
-            <button data-value="off" class="active">Off</button>
-            <button data-value="on">On</button>
+            <button data-value="default" class="active">Default</button>
+            <button data-value="custom">Custom</button>
+            <button data-value="off">Off</button>
           </div>
         </div>
         <div class="alert-row">

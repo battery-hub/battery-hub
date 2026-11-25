@@ -71,6 +71,7 @@ const PATTERNS = [
     he: (m) => `כמו בהגדרות (${m[1]}%)`,
     pt: (m) => `Igual às Configurações (${m[1]}%)`,
   }],
+  [/^Same as Settings \((\d+) days?\)$/, { pt: (m) => `Igual às Configurações (${m[1]} ${m[1] === '1' ? 'dia' : 'dias'})` }],
   [/^Charging, (\d+)%$/, { es: (m) => `Cargando, ${m[1]}%`, zh: (m) => `充电中，${m[1]}%`, he: (m) => `בטעינה, ${m[1]}%`, pt: (m) => `Carregando, ${m[1]}%` }],
   [/^(\d+) hidden devices?$/, {
     es: (m) => (m[1] === '1' ? '1 dispositivo oculto' : `${m[1]} dispositivos ocultos`),
@@ -242,6 +243,7 @@ const RU_PATTERNS = [
   [/^([\d.]+)% a day$/, (m) => `${m[1]}% в день`],
   [/^([\d.]+)% an hour$/, (m) => `${m[1]}% в час`],
   [/^Same as Settings \((\d+)%\)$/, (m) => `Как в настройках (${m[1]}%)`],
+  [/^Same as Settings \((\d+) days?\)$/, (m) => `Как в настройках (${m[1]} ${ruPlural(m[1], 'день', 'дня', 'дней')})`],
   [/^Charging, (\d+)%$/, (m) => `Заряжается, ${m[1]}%`],
   [/^(\d+) hidden devices?$/, (m) => `${m[1]} ${ruPlural(m[1], 'скрытое устройство', 'скрытых устройства', 'скрытых устройств')}`],
   [/^(.*) · (\d+) channels?$/, (m) => `${m[1]} · ${m[2]} ${ruPlural(m[2], 'канал', 'канала', 'каналов')}`],

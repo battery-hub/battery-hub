@@ -408,6 +408,7 @@ ipcMain.handle('settings:set', (evt, patch) => {
   if ('theme' in patch) applyTheme();
   if ('launchAtLogin' in patch || 'startMinimized' in patch) applyLoginItem();
   if ('pollIntervalSec' in patch) restartPoller();
+  if ('notifyStale' in patch || 'notifyStaleDays' in patch) checkStaleReadings();
   if ('trayEnabled' in patch && !patch.trayEnabled) tray.destroyAll();
   if ('trayEnabled' in patch && patch.trayEnabled) restartPoller();
   if ('trayMode' in patch) {

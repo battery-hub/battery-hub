@@ -149,14 +149,38 @@ test('a new reading that gets old alerts again', () => {
   assert.match(sent[0].body, /last reading 2 days ago/);
 });
 
-test('the old reading alert stays quiet unless it is on and there is a real reading', () => {
-  notifier.checkStale(stale({ staleAlertDays: null }), NOW);              // off for this device (the default)
-  notifier.checkStale(stale({ hidden: true }), NOW);                      // hidden
+test('the old reading alert stays quiet when off or without a real reading', () => {
+  notifier.checkStale(stale({ staleAlertDays: 0 }), NOW);                  // off for this device
+  notifier.checkStale(stale({ staleAlertDays: null }), NOW);               // follows Settings, off by default
+  notifier.checkStale(stale({ hidden: true }), NOW);                       // hidden
   notifier.checkStale(stale({ lastReading: null, lastReadingAt: null }), NOW); // never read
-  notifier.checkStale(stale(), NOW - 2 * DAY);                            // only one day old then
-  settings.notifyEnabled = false;
-  notifier.checkStale(stale(), NOW);                                      // alerts off in Settings
+  notifier.checkStale(stale(), NOW - 2 * DAY);                             // only one day old then
   assert.equal(sent.length, 0);
+});
+
+test('turned on in Settings, it covers every device that follows Settings', () => {
+  settings.notifyStale = true;
+  settings.notifyStaleDays = 2;
+  assert.deepEqual(notifier.checkStale(stale({ staleAlertDays: null }), NOW), { staleAlertedFor: NOW - 3 * DAY });
+  assert.deepEqual(notifier.checkStale(stale({ id: 'k', staleAlertDays: undefined }), NOW), { staleAlertedFor: NOW - 3 * DAY });
+  assert.equal(sent.length, 2);
+  settings.notifyStaleDays = 4;                                            // a longer limit in Settings
+  assert.equal(notifier.checkStale(stale({ id: 'm', staleAlertDays: null }), NOW), null);
+});
+
+test('a device can switch it off or set its own days, whatever Settings say', () => {
+  settings.notifyStale = true;
+  settings.notifyStaleDays = 2;
+  assert.equal(notifier.checkStale(stale({ staleAlertDays: 0 }), NOW), null, 'off for this device');
+  assert.equal(notifier.checkStale(stale({ staleAlertDays: 5 }), NOW), null, 'its own 5 days, not yet');
+  settings.notifyStale = false;
+  assert.ok(notifier.checkStale(stale({ staleAlertDays: 2 }), NOW), 'its own 2 days alert with Settings off');
+  assert.equal(sent.length, 1);
+});
+
+test('the old reading alert has its own switch, apart from the low battery one', () => {
+  settings.notifyEnabled = false;                                          // low battery alerts off
+  assert.ok(notifier.checkStale(stale({ staleAlertDays: 2 }), NOW));
 });
 
 test('one day old says "1 day"', () => {
@@ -164,13 +188,15 @@ test('one day old says "1 day"', () => {
   assert.match(sent[0].body, /last reading 1 day ago/);
 });
 
-test('the old reading limit is kept between 1 and 14 days, and empty turns it off', () => {
+test("a device's days: empty follows Settings, 0 is off, else 1 to 14", () => {
   assert.equal(notifier.staleDaysOf(null), null);
   assert.equal(notifier.staleDaysOf(undefined), null);
+  assert.equal(notifier.staleDaysOf(''), null);
   assert.equal(notifier.staleDaysOf('abc'), null);
-  assert.equal(notifier.staleDaysOf(0), 1);
+  assert.equal(notifier.staleDaysOf(0), 0);
   assert.equal(notifier.staleDaysOf(2), 2);
   assert.equal(notifier.staleDaysOf('3'), 3);
   assert.equal(notifier.staleDaysOf(2.6), 3);
   assert.equal(notifier.staleDaysOf(30), 14);
+  assert.equal(notifier.staleDaysOf(-4), 0);
 });

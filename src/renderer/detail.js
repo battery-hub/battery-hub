@@ -274,19 +274,28 @@ async function saveAlert(threshold) {
   await window.batteryHub.setDeviceAlert(dev.id, threshold);
 }
 
-// The old reading alert: off unless the device has its own number of days.
+// The old reading alert: a device follows Settings (null), uses its own days (1-14) or is off (0).
 const STALE_DEFAULT_DAYS = 2;
+function staleModeOf(dev) {
+  if (dev.staleAlertDays === 0) return 'off';
+  return typeof dev.staleAlertDays === 'number' ? 'custom' : 'default';
+}
 function renderStaleAlert(dev) {
-  const on = typeof dev.staleAlertDays === 'number';
+  const mode = staleModeOf(dev);
   document.querySelectorAll('#detail-stale-mode button').forEach((b) => {
-    b.classList.toggle('active', b.dataset.value === (on ? 'on' : 'off'));
+    b.classList.toggle('active', b.dataset.value === mode);
   });
-  document.getElementById('detail-stale-stepper').hidden = !on;
+  document.getElementById('detail-stale-stepper').hidden = mode !== 'custom';
   const input = document.getElementById('detail-stale-value');
-  if (on && document.activeElement !== input) input.value = dev.staleAlertDays;
-  let hint = on ? 'Alert when the last reading is older than'
-    : 'Off. Useful for a device read only now and then, like a headset used over a dongle.';
-  if (currentSettings.notifyEnabled === false) hint = 'Alerts are off in Settings';
+  if (mode === 'custom' && document.activeElement !== input) input.value = dev.staleAlertDays;
+  let hint;
+  if (mode === 'custom') hint = 'Alert when the last reading is older than';
+  else if (mode === 'off') hint = 'Off for this device';
+  else if (currentSettings.notifyStale) {
+    const days = currentSettings.notifyStaleDays ?? STALE_DEFAULT_DAYS;
+    hint = `Same as Settings (${days} ${days === 1 ? 'day' : 'days'})`;
+  }
+  else hint = 'Off in Settings';
   setText('detail-stale-hint', hint);
 }
 
@@ -373,8 +382,11 @@ document.querySelectorAll('#detail-stale-mode button').forEach((button) => {
   button.addEventListener('click', () => {
     const dev = state.saved[detail.id];
     if (!dev) return;
-    if (button.dataset.value === 'off') saveStaleAlert(null);
-    else if (typeof dev.staleAlertDays !== 'number') saveStaleAlert(STALE_DEFAULT_DAYS);
+    const mode = button.dataset.value;
+    if (mode === staleModeOf(dev)) return;
+    if (mode === 'default') saveStaleAlert(null);
+    else if (mode === 'off') saveStaleAlert(0);
+    else saveStaleAlert(currentSettings.notifyStaleDays ?? STALE_DEFAULT_DAYS);
   });
 });
 
