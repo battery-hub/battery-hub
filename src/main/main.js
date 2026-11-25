@@ -351,11 +351,20 @@ ipcMain.handle('devices:set-hidden', (evt, { id, hidden }) => {
   return saved;
 });
 
+// A Cancel can come while the device is still being looked up, before the scan itself exists, so
+// it is remembered here as well as sent to the scan.
+let captureCancelled = false;
 ipcMain.handle('devices:capture', (evt, id) => poller.withPollingPaused(async () => {
+  captureCancelled = false;
   const live = (await hidClient.enumerate()).find((d) => d.id === id);
+  if (captureCancelled) return [];
   if (!live) throw new Error('device not connected');
   return hidClient.capture(live);
 }));
+ipcMain.handle('devices:cancel-capture', () => {
+  captureCancelled = true;
+  return hidClient.cancelCapture();
+});
 
 ipcMain.handle('devices:poll-now', async () => {
   const results = [];
