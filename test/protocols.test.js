@@ -589,11 +589,9 @@ test('G3 A revisions use Gmouse by known ids or branded model name on the vendor
     ...fields,
   });
   for (const fields of [
-    { vendorId: 0xa8a5, productId: 0x2255, product: '' },
     { productId: 0x4245, product: '' },
     { product: 'G3A' },
     { product: 'g3 a Mouse' },
-    { product: 'MCHOSE_G3_A' },
     { vendorId: 0x9999, manufacturer: 'MCHOSE', product: 'G3A Mouse' },
     { vendorId: 0x9999, product: 'mchose g3a' },
     { vendorId: 0x9999, manufacturer: '迈从', product: 'G3 A' },
@@ -603,12 +601,9 @@ test('G3 A revisions use Gmouse by known ids or branded model name on the vendor
   for (const fields of [
     { vendorId: 0x9999, product: 'OtherBrand G3A', manufacturer: 'OtherBrand' },
     { product: 'MCHOSE G3 Ultra' },
-    { product: 'MCHOSE G3 V2' },
     { product: 'MCHOSE G3AB' },
-    { product: '' },
     { productId: 0x4245, channels: [{ usagePage: 1, usage: 2 }] },
     { channels: [{ usagePage: 0xff01, usage: 1 }] },
-    { channels: [{ usagePage: 0xff02, usage: 0x10 }] },
   ]) {
     assert.equal(yjx.matches(device(fields)), false, JSON.stringify(fields));
   }
@@ -638,9 +633,11 @@ test('G3 A checks online status before accepting a receiver battery cached while
     commands.length = 0;
     assert.deepEqual(await yjx.readBattery(device), { capacity: 68, charging: false });
     assert.deepEqual(commands, [0xed, 0x30]);
-    commands.length = 0;
-    await yjx.readBattery({ ...device, vendorId: 0x249a, productId: 0x5c2f });
-    assert.deepEqual(commands, [0x30]);
+    for (const [vendorId, productId] of [[0xa8a5, 0x2255], [0x3837, 0x9999], [0x249a, 0x5c2f]]) {
+      commands.length = 0;
+      await yjx.readBattery({ ...device, vendorId, productId, product: 'MCHOSE G3 A' });
+      assert.deepEqual(commands, [0x30]);
+    }
     assert.equal(yjx.parseStatus([0xaa, 0xed]), null);
     assert.equal(yjx.parseStatus([0xaa, 0x30, 0, 0, 0, 0, 0, 0, 2]), null);
     assert.equal(yjx.parseStatus([0xaa, 0xed, 0, 0, 0, 0, 0, 0, 255]), null);

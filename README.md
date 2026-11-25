@@ -103,7 +103,7 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | Corsair | Void, Void Wireless v2, HS80 MAX, Virtuoso, Virtuoso SE, XT and MAX headsets; Slipstream receiver |
 | Audeze | Maxwell, Maxwell 2 |
 | Astro | A50 Gen 4, A50 Gen 5 |
-| MCHOSE | V9 Turbo+, V9 PRO, X9 headsets; A7 V2 Ultra, A5 Ultra, K7 Ultra, A7 Ultra, G3 A (2.4G, known receiver IDs and MCHOSE G3A/G3 A model names on the Gmouse interface) mice; G75 V2, G87 V2, K87S, K99 V3 keyboards |
+| MCHOSE | V9 Turbo+, V9 PRO, X9 headsets; A7 V2 Ultra, A5 Ultra, K7 Ultra, A7 Ultra, G3 A mice; G75 V2, G87 V2, K87S, K99 V3 keyboards |
 | VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers; ATK NearLink and BitMouse receivers, X1 NearLink |
 | Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X and other LAMZU mice |
 | Beken/Xenta 2.4G receiver | Attack Shark and other mice on 1d57:fa60 |
