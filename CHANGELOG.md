@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+## [2.0.7] - 2026-11-25
+
 ### Added
 
 - An "old reading" alert, off by default: when a device hasn't had a real reading for a number of days, Battery Hub
@@ -388,7 +390,8 @@ First stable release, consolidating the 1.0.x and 1.1.x series.
 Initial public release: live battery monitoring for wireless HID devices, per-device tray
 icons, low-battery notifications, history sparklines and the guided calibration wizard.
 
-[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...HEAD
+[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.7...HEAD
+[2.0.7]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/battery-hub/battery-hub/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/battery-hub/battery-hub/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/battery-hub/battery-hub/compare/v2.0.3...v2.0.4
