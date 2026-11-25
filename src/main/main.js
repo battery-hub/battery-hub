@@ -103,6 +103,7 @@ function broadcast(deviceState) {
         charging: !!(reading && reading.charging) && deviceState.online !== false,
         offline: deviceState.online === false,
         offLabel: offLabel(deviceState),
+        readAt: deviceState.lastReadingAt || null,
         product: deviceState.product,
         driverId: deviceState.driverId,
         customIcon: deviceState.customIcon,

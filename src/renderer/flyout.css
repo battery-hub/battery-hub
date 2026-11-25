@@ -38,4 +38,6 @@ button svg { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap
 .row[data-tone="warn"] .fill { background: var(--warn); } .row[data-tone="warn"] .pct { color: var(--warn); }
 .row[data-tone="bad"] .fill { background: var(--bad); } .row[data-tone="bad"] .pct { color: var(--bad); }
 .row.off .pct, .row.off .name { color: var(--sub); font-weight: 400; }
+.row.off .fill { background: var(--sub); opacity: 0.45; }
+.name .ago { flex: none; font-size: 0.85em; opacity: 0.8; }
 .empty { color: var(--sub); padding: 14px 0; }
