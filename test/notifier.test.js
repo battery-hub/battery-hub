@@ -117,3 +117,60 @@ test('a device with its own alert level uses it instead of the one in Settings',
   notifier.check(device(20, false, { alertThreshold: null }));
   assert.equal(sent.length, 1);
 });
+
+// ---- Old reading alert (#182): a device read only now and then, e.g. a headset read over Bluetooth
+// but used over a dongle that reports nothing. Off by default, on per device, real readings only.
+const DAY = 24 * 3600000;
+const NOW = Date.parse('2026-11-25T12:00:00Z');
+const stale = (extra = {}) => ({
+  id: 'h', product: 'Fuxi-H6', online: false, lastReading: { capacity: 100, charging: false },
+  lastReadingAt: NOW - 3 * DAY, staleAlertDays: 2, ...extra,
+});
+
+test('a reading older than the device\'s limit alerts once, naming its age', () => {
+  const patch = notifier.checkStale(stale(), NOW);
+  assert.deepEqual(sent.map((n) => n.title), ['Old reading']);
+  assert.equal(sent[0].body, 'Fuxi-H6: last reading 3 days ago. Connect it in a way Battery Hub can read, like Bluetooth, to update it.');
+  assert.deepEqual(patch, { staleAlertedFor: NOW - 3 * DAY }, 'which reading was alerted is kept on the device');
+});
+
+test('the same reading never alerts twice, also after a restart', () => {
+  const alerted = stale({ staleAlertedFor: NOW - 3 * DAY }); // what the store keeps across restarts
+  assert.equal(notifier.checkStale(alerted, NOW), null);
+  assert.equal(notifier.checkStale(alerted, NOW + 5 * DAY), null);
+  assert.equal(sent.length, 0);
+});
+
+test('a new reading that gets old alerts again', () => {
+  const fresh = stale({ staleAlertedFor: NOW - 3 * DAY, lastReadingAt: NOW - 1 * DAY });
+  assert.equal(notifier.checkStale(fresh, NOW), null, 'one day old, under the two-day limit');
+  assert.deepEqual(notifier.checkStale(fresh, NOW + 1 * DAY + 1), { staleAlertedFor: NOW - 1 * DAY });
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].body, /last reading 2 days ago/);
+});
+
+test('the old reading alert stays quiet unless it is on and there is a real reading', () => {
+  notifier.checkStale(stale({ staleAlertDays: null }), NOW);              // off for this device (the default)
+  notifier.checkStale(stale({ hidden: true }), NOW);                      // hidden
+  notifier.checkStale(stale({ lastReading: null, lastReadingAt: null }), NOW); // never read
+  notifier.checkStale(stale(), NOW - 2 * DAY);                            // only one day old then
+  settings.notifyEnabled = false;
+  notifier.checkStale(stale(), NOW);                                      // alerts off in Settings
+  assert.equal(sent.length, 0);
+});
+
+test('one day old says "1 day"', () => {
+  notifier.checkStale(stale({ staleAlertDays: 1, lastReadingAt: NOW - 1 * DAY - 60000 }), NOW);
+  assert.match(sent[0].body, /last reading 1 day ago/);
+});
+
+test('the old reading limit is kept between 1 and 14 days, and empty turns it off', () => {
+  assert.equal(notifier.staleDaysOf(null), null);
+  assert.equal(notifier.staleDaysOf(undefined), null);
+  assert.equal(notifier.staleDaysOf('abc'), null);
+  assert.equal(notifier.staleDaysOf(0), 1);
+  assert.equal(notifier.staleDaysOf(2), 2);
+  assert.equal(notifier.staleDaysOf('3'), 3);
+  assert.equal(notifier.staleDaysOf(2.6), 3);
+  assert.equal(notifier.staleDaysOf(30), 14);
+});

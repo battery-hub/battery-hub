@@ -242,6 +242,7 @@ function renderDetail() {
   }
 
   renderAlert(dev);
+  renderStaleAlert(dev);
   offerReadReport(dev);
   offerWorksReport(dev);
 
@@ -271,6 +272,31 @@ async function saveAlert(threshold) {
   renderAlert(dev);
   positionSegThumbs(sheet);
   await window.batteryHub.setDeviceAlert(dev.id, threshold);
+}
+
+// The old reading alert: off unless the device has its own number of days.
+const STALE_DEFAULT_DAYS = 2;
+function renderStaleAlert(dev) {
+  const on = typeof dev.staleAlertDays === 'number';
+  document.querySelectorAll('#detail-stale-mode button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.value === (on ? 'on' : 'off'));
+  });
+  document.getElementById('detail-stale-stepper').hidden = !on;
+  const input = document.getElementById('detail-stale-value');
+  if (on && document.activeElement !== input) input.value = dev.staleAlertDays;
+  let hint = on ? 'Alert when the last reading is older than'
+    : 'Off. Useful for a device read only now and then, like a headset used over a dongle.';
+  if (currentSettings.notifyEnabled === false) hint = 'Alerts are off in Settings';
+  setText('detail-stale-hint', hint);
+}
+
+async function saveStaleAlert(days) {
+  const dev = state.saved[detail.id];
+  if (!dev) return;
+  dev.staleAlertDays = days;
+  renderStaleAlert(dev);
+  positionSegThumbs(sheet);
+  await window.batteryHub.setDeviceStaleAlert(dev.id, days);
 }
 
 function openDetail(id) {
@@ -341,6 +367,24 @@ document.getElementById('detail-alert-value').addEventListener('change', (e) => 
   v = Math.max(5, Math.min(95, v));
   input.value = v;
   saveAlert(v);
+});
+
+document.querySelectorAll('#detail-stale-mode button').forEach((button) => {
+  button.addEventListener('click', () => {
+    const dev = state.saved[detail.id];
+    if (!dev) return;
+    if (button.dataset.value === 'off') saveStaleAlert(null);
+    else if (typeof dev.staleAlertDays !== 'number') saveStaleAlert(STALE_DEFAULT_DAYS);
+  });
+});
+
+document.getElementById('detail-stale-value').addEventListener('change', (e) => {
+  const input = e.target;
+  let v = Math.round(Number(input.value));
+  if (Number.isNaN(v)) v = STALE_DEFAULT_DAYS;
+  v = Math.max(1, Math.min(14, v));
+  input.value = v;
+  saveStaleAlert(v);
 });
 
 window.addEventListener('resize', () => { if (detail.id !== null) renderChart(); });

@@ -123,6 +123,10 @@ const PATTERNS = [
     he: (m) => `${m[1]} טעון (${m[2]}%).`,
     pt: (m) => `Carga completa: ${m[1]} (${m[2]}%).`,
   }],
+  // The old reading alert (notifier.js). Only Portuguese so far; the others show the English.
+  [/^(.+): last reading (\d+) days? ago\. Connect it in a way Battery Hub can read, like Bluetooth, to update it\.$/, {
+    pt: (m) => `${m[1]}: última leitura há ${m[2]} ${m[2] === '1' ? 'dia' : 'dias'}. Conecte-o de um jeito que o Battery Hub consiga ler, como o Bluetooth, para atualizar.`,
+  }],
   // The check in Settings > Help (diagnostics.js). Only Portuguese has these so far: the others
   // show the English until someone translates them.
   [/^All (\d+) files match what was shipped\.$/, { pt: (m) => `Todos os ${m[1]} arquivos são iguais aos do pacote original.` }],
@@ -202,6 +206,7 @@ function ruDiagnosticAgo(text) {
 }
 
 const RU_PATTERNS = [
+  [/^(.+): last reading (\d+) days? ago\. Connect it in a way Battery Hub can read, like Bluetooth, to update it\.$/, (m) => `Устройство «${m[1]}»: последние данные получены ${m[2]} ${ruPlural(m[2], 'день', 'дня', 'дней')} назад. Подключите его так, чтобы Battery Hub мог прочитать заряд, например по Bluetooth.`],
   [/^All (\d+) files match what was shipped\.$/, (m) => `${m[1]} ${ruPlural(m[1], 'файл соответствует', 'файла соответствуют', 'файлов соответствуют')} исходной поставке.`],
   [/^(\d+) of (\d+) files are missing or changed\.$/, (m) => `${m[1]} из ${m[2]} файлов отсутствуют или изменены.`],
   [/^You have (\S+), the latest version\.$/, (m) => `Установлена актуальная версия ${m[1]}.`],

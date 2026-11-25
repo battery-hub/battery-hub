@@ -19,7 +19,36 @@ const ALERTS = {
   low: (name, cap) => ({ title: 'Low battery', body: `${name} is at ${cap}%. Time to charge.`, icon: LOW_ICON }),
   charging: (name, cap) => ({ title: 'Charging', body: `${name} is charging (${cap}%).`, icon: CHARGING_ICON }),
   charged: (name, cap) => ({ title: 'Fully charged', body: `${name} is charged (${cap}%).`, icon: ICON }),
+  stale: (name, days) => ({
+    title: 'Old reading',
+    body: `${name}: last reading ${days} ${days === 1 ? 'day' : 'days'} ago. Connect it in a way Battery Hub can read, like Bluetooth, to update it.`,
+    icon: ICON,
+  }),
 };
+
+const DAY_MS = 24 * 3600000;
+
+// The days a device's last reading may age before the old reading alert; null turns it off.
+function staleDaysOf(value) {
+  const n = Number(value);
+  if (value == null || value === '' || Number.isNaN(n)) return null;
+  return Math.max(1, Math.min(14, Math.round(n)));
+}
+
+// The old reading alert, for a device read only now and then (a headset read over Bluetooth but used
+// over a dongle that reports nothing). Off by default: on when the device has staleAlertDays. It uses
+// only the age of the last real reading, and alerts once per reading: the caller stores the returned
+// { staleAlertedFor } on the device, so a restart doesn't alert again. Returns null when it didn't alert.
+function checkStale(device, now = Date.now()) {
+  const days = device.staleAlertDays;
+  if (typeof days !== 'number' || device.hidden || !device.lastReadingAt) return null;
+  if (!store.getSettings().notifyEnabled) return null;
+  if (device.staleAlertedFor === device.lastReadingAt) return null;
+  const age = now - device.lastReadingAt;
+  if (age < days * DAY_MS) return null;
+  post(ALERTS.stale(displayName(device), Math.floor(age / DAY_MS)));
+  return { staleAlertedFor: device.lastReadingAt };
+}
 
 function post({ title, body, icon }) {
   if (!Notification.isSupported()) return;
@@ -71,4 +100,4 @@ function reset(id) {
   chargingAlertAt.delete(id);
 }
 
-module.exports = { check, reset, post, ALERTS };
+module.exports = { check, checkStale, staleDaysOf, reset, post, ALERTS };

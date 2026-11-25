@@ -334,6 +334,21 @@
         </div>
 
         <div class="chart-head">
+          <h3>Old reading alert</h3>
+          <div class="segmented" id="detail-stale-mode">
+            <button data-value="off" class="active">Off</button>
+            <button data-value="on">On</button>
+          </div>
+        </div>
+        <div class="alert-row">
+          <p class="alert-hint" id="detail-stale-hint"></p>
+          <div class="stepper" id="detail-stale-stepper" hidden>
+            <input type="number" id="detail-stale-value" min="1" max="14" step="1" aria-label="Days for this device" />
+            <span class="stepper-unit">days</span>
+          </div>
+        </div>
+
+        <div class="chart-head">
           <h3>Battery history</h3>
           <div class="segmented" id="detail-range">
             <button data-value="day" class="active">24 hours</button>
