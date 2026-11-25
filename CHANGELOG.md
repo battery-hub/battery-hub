@@ -10,11 +10,6 @@ All notable changes to this project are documented here. Versions follow
 
 - A supported device can also be set up with a scan, from its card's menu. Its Add device row only offers Add,
   so when its reading failed there was no way to send the scan that fixes it (issue #92).
-
-## [2.0.7] - 2026-11-25
-
-### Added
-
 - An "old reading" alert, off by default: when a device hasn't had a real reading for a number of days, Battery Hub
   says so, for devices that can only be read now and then (pull request #219 by @maxeinstein-dev).
 
@@ -395,8 +390,7 @@ First stable release, consolidating the 1.0.x and 1.1.x series.
 Initial public release: live battery monitoring for wireless HID devices, per-device tray
 icons, low-battery notifications, history sparklines and the guided calibration wizard.
 
-[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.7...HEAD
-[2.0.7]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...v2.0.7
+[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...HEAD
 [2.0.6]: https://github.com/battery-hub/battery-hub/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/battery-hub/battery-hub/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/battery-hub/battery-hub/compare/v2.0.3...v2.0.4
