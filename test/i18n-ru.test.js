@@ -59,6 +59,9 @@ test('Russian translates dynamic diagnostics and makes plurals correctly', () =>
     'The scan takes 45 seconds. While it runs, turn the device off and on once or twice, because many devices only report their battery at power on. If the device has its own app, keep it open.',
   ];
   for (const english of examples) assert.notEqual(tr(english), english, english);
+  assert.equal(tr('All 1 files match what was shipped.'), '1 файл соответствует исходной поставке.');
+  assert.equal(tr('All 2 files match what was shipped.'), '2 файла соответствуют исходной поставке.');
+  assert.equal(tr('All 5 files match what was shipped.'), '5 файлов соответствуют исходной поставке.');
   assert.match(tr('Working: found 21 devices in 8 ms.'), /21 устройство/);
   assert.match(tr('Working: found 12 devices in 8 ms.'), /12 устройств/);
   assert.match(tr('Last read 4 days ago.'), /4 дня назад/);
