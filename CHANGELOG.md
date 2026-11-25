@@ -6,6 +6,10 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+## [2.0.7] - 2026-11-25
+
+A hotfix for 2.0.6.
+
 ### Added
 
 - A supported device can also be set up with a scan, from its card's menu. Its Add device row only offers Add,
@@ -21,6 +25,8 @@ All notable changes to this project are documented here. Versions follow
   tried too, a feature-report answer is waited for a little longer, and the error says what each channel answered.
 - HyperX Cloud Stinger 2 Wireless wasn't recognised (issue #206): it was looked for on the Cloud II's interface,
   and is now its own entry, under its own name, with its 20-byte requests.
+- Translations: a new text without a Russian translation shows in English, as in the other languages, instead of
+  failing the checks (issue #217, pull request #220 by @maxeinstein-dev).
 
 ## [2.0.6] - 2026-11-25
 
@@ -390,7 +396,8 @@ First stable release, consolidating the 1.0.x and 1.1.x series.
 Initial public release: live battery monitoring for wireless HID devices, per-device tray
 icons, low-battery notifications, history sparklines and the guided calibration wizard.
 
-[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...HEAD
+[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.7...HEAD
+[2.0.7]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/battery-hub/battery-hub/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/battery-hub/battery-hub/compare/v2.0.4...v2.0.5
 [2.0.4]: https://github.com/battery-hub/battery-hub/compare/v2.0.3...v2.0.4
