@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Added
+
+- An "old reading" alert, off by default: when a device hasn't had a real reading for a number of days, Battery Hub
+  says so, for devices that can only be read now and then (pull request #219 by @maxeinstein-dev).
+
 ### Fixed
 
 - Russian: about 30 texts that were still in English (the check, device reports, some settings), and
