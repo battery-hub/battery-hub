@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Fixed
+
+- The check said "Couldn't reach GitHub to compare" when GitHub's hourly limit for anonymous requests was used up
+  on the network. It now reads the latest version from the releases page instead.
+
 ## [2.0.7] - 2026-11-25
 
 A hotfix for 2.0.6.
