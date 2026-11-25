@@ -152,6 +152,24 @@ test('kysona: on a feature-only receiver, our own request read back is not taken
   assert.equal((await kysona.readBattery(logical)).capacity, 64);
 });
 
+test('kysona: when the command collection fails both ways, the next vendor collection is asked and the error names both', async () => {
+  const first = mouse();
+  first.dev.reads = [new Error('could not read data from device')];
+  first.dev.featureError = new Error('could not get feature report');
+  const second = mouse();
+  second.dev.reads = [[], reply(55)];
+  const logical = { channels: [first.logical.channels[0], { ...second.logical.channels[0], usagePage: 0xff04 }] };
+  assert.equal((await kysona.readBattery(logical)).capacity, 55);
+
+  const a = mouse();
+  a.dev.reads = [new Error('could not read data from device')];
+  a.dev.featureError = new Error('could not get feature report');
+  const b = mouse();
+  b.dev.writeError = new Error('Cannot write to hid device');
+  const both = { channels: [a.logical.channels[0], { ...b.logical.channels[0], usagePage: 0xff03, usage: undefined }] };
+  await assert.rejects(kysona.readBattery(both), /^Error: ff02:0002 could not read data from device \(feature reports: could not get feature report\); ff03:---- Cannot write/);
+});
+
 test('kysona: status answers are checked like Linux checks them', () => {
   assert.equal(kysona.parseStatus(statusOn()), true);
   assert.equal(kysona.parseStatus(statusOff()), false);

@@ -10,6 +10,8 @@ All notable changes to this project are documented here. Versions follow
 
 - Russian: about 30 texts that were still in English (the check, device reports, some settings), and
   correct plural forms (pull request #215 by @Dfavorit55).
+- Compx receivers that still failed in 2.0.6 (Redragon M901P-KS, issue #92): the other vendor channels are
+  tried too, a feature-report answer is waited for a little longer, and the error says what each channel answered.
 
 ## [2.0.6] - 2026-11-25
 

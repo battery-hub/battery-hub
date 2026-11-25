@@ -72,16 +72,21 @@ async function readBattery(logicalDevice) {
   if (compx.matches(logicalDevice)) return compx.readBattery(logicalDevice);
   const channels = commandChannels(logicalDevice);
   if (!channels.length) throw new Error('no command channel');
-  let lastError = null;
+  // A channel that refuses the request, or has no input report and doesn't answer through feature
+  // reports either, passes to the next one. If none answers, the error names what each one said, so
+  // a device report shows where it failed.
+  const failures = [];
   for (const channel of channels) {
     try {
       return await readFrom(channel);
     } catch (e) {
-      if (!/cannot write/i.test(e.message)) throw e;
-      lastError = e;
+      if (!/cannot write|could not read/i.test(e.message)) throw e;
+      failures.push({ channel, error: e });
     }
   }
-  throw lastError;
+  if (failures.length === 1) throw failures[0].error;
+  const name = (c) => `${c.usagePage.toString(16)}:${c.usage === undefined ? '----' : c.usage.toString(16).padStart(4, '0')}`;
+  throw new Error(failures.map((f) => `${name(f.channel)} ${f.error.message}`).join('; '));
 }
 
 // Some receivers in this family, such as 25a7:fa07 (Redragon M901P-KS, issue #92) and 25a7:fa7c
@@ -105,16 +110,22 @@ async function readFrom(channel) {
       return await readByFeature(channel);
     } catch (featureError) {
       if (featureError.message === 'mouse is off') throw featureError;
-      throw e; // not a feature-only receiver either: report what went wrong first
+      // Not a feature-only receiver either: report what went wrong both ways.
+      throw new Error(`${e.message} (feature reports: ${featureError.message})`);
     }
   }
 }
 
+// The answer can take a moment, so it is read a few times before the request is sent again.
+const FEATURE_READS = 4;
 async function askByFeature(channel, dev, request) {
   await session.sendFeatureReport(channel.path, dev, request);
-  await sleep(FEATURE_WAIT_MS);
-  const answer = await session.getFeatureReport(channel.path, dev, request[0], FRAME_LENGTH);
-  return sameBytes(answer, request) ? [] : answer; // our own request read back is no answer
+  for (let i = 0; i < FEATURE_READS; i++) {
+    await sleep(FEATURE_WAIT_MS);
+    const answer = await session.getFeatureReport(channel.path, dev, request[0], FRAME_LENGTH);
+    if (!sameBytes(answer, request)) return answer; // our own request read back is no answer
+  }
+  return [];
 }
 
 async function readByFeature(channel) {
