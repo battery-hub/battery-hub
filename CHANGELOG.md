@@ -20,9 +20,15 @@ All notable changes to this project are documented here. Versions follow
 - SONY INZONE Buds on their USB dongle, with Left, Right and Case levels in the detail view
   (pull request #199 by @rurute, tested on the buds).
 - Russian (pull request #153 by @Dfavorit55). It follows a Russian Windows, or can be picked in Settings.
+- Brazilian Portuguese (pull request #183 by @maxeinstein-dev), also used on a Portuguese Windows.
+- A Cancel button while a device scan runs (pull request #187 by @maxeinstein-dev).
+- A switched-off device in the tray popup shows its last reading and how long ago it was
+  (pull request #185 by @maxeinstein-dev).
 
 ### Fixed
 
+- The check no longer counts the app being closed from outside (Task Manager, Windows shutting down)
+  as an error (pull request #184 by @maxeinstein-dev).
 - Redragon M901P-KS and AJAZZ AJ199 mice on Compx receivers 25a7:fa07 and 25a7:fa7c: the receiver
   answers only through feature reports, so the read failed with "could not read data from device" (#92, #196).
 - Attack Shark X11 and other Beken receivers that send `03 55 40` instead of `03 e5 40`
