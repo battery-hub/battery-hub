@@ -52,4 +52,21 @@ function planMerges(devices) {
   return plans;
 }
 
-module.exports = { identityOf, address, routesOf, planMerges };
+// A Lightspeed receiver's card from before its devices got cards of their own goes to the device it
+// was reading: the one in the lowest slot. [{ from: card, to: live device }]
+function planReceiverMoves(devices, live) {
+  const cards = Object.values(devices);
+  const moves = [];
+  for (const parent of live.filter((d) => d.expanded)) {
+    const card = devices[parent.id];
+    if (!card || card.driverId !== 'hidpp') continue;
+    const children = live.filter((d) => d.receiver && d.id.startsWith(`${parent.id}:`));
+    if (!children.length) continue;
+    const first = children.reduce((a, b) => (b.receiver.slot < a.receiver.slot ? b : a));
+    if (cards.some((c) => routesOf(c).some((r) => r.id === first.id))) continue; // it has a card already
+    moves.push({ from: card, to: first });
+  }
+  return moves;
+}
+
+module.exports = { identityOf, address, routesOf, planMerges, planReceiverMoves };

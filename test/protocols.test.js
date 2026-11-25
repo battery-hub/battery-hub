@@ -354,7 +354,7 @@ test('Logitech: a device that stops answering reads as off on the same poll, an 
 });
 
 // The G913 TKL (slot 1, 0x1001 at index 7) and G502 X (slot 2, 0x1004 at index 6) on one receiver,
-// with the readings recorded in fork Issue #2: 0x102d = 4141 mV, and 0x51 = 81%.
+// with the readings recorded while investigating #210: 0x102d = 4141 mV, and 0x51 = 81%.
 function twoDeviceReceiver(calls, { asleep = [] } = {}) {
   const features = { 1: { 0x1001: 7 }, 2: { 0x1004: 6 } };
   const readings = { 1: [0x10, 0x2d, 0x00], 2: [0x51, 0x08, 0x00, 0x00] };
