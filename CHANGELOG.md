@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Fixed
+
+- Russian: about 30 texts that were still in English (the check, device reports, some settings), and
+  correct plural forms (pull request #215 by @Dfavorit55).
+
 ## [2.0.6] - 2026-11-25
 
 ### Added
