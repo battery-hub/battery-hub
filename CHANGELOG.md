@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Added
+
+- A supported device can also be set up with a scan, from its card's menu. Its Add device row only offers Add,
+  so when its reading failed there was no way to send the scan that fixes it (issue #92).
+
 ## [2.0.7] - 2026-11-25
 
 ### Added

@@ -283,8 +283,11 @@ function buildDeviceCard(dev) {
   const menuBtn = el.querySelector('.menu-btn');
   const dropdown = el.querySelector('.menu-dropdown');
   const recalBtn = el.querySelector('.menu-recalibrate');
-  // Recalibrate only makes sense for hand-calibrated (generic) devices.
-  if (dev.driverId !== 'generic') recalBtn.remove();
+  // A hand-calibrated (generic) device is recalibrated. A supported one can be set up with a scan
+  // too: its Add device row only offers Add, and when its built-in reading fails, the scan is how its
+  // owner sends the bytes that fix it (issue #92). Windows-read devices have nothing to scan.
+  if (dev.driverId === 'system') recalBtn.remove();
+  else if (dev.driverId !== 'generic') recalBtn.textContent = 'Set up';
 
   menuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
