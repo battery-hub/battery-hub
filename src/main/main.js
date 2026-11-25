@@ -113,6 +113,19 @@ function broadcast(deviceState) {
   }
 }
 
+const STALE_CHECK_MS = 30 * 60 * 1000;
+
+// Old reading alerts (notifier.checkStale), for every saved device. The device keeps which reading
+// was alerted, so a restart doesn't repeat it.
+function checkStaleReadings() {
+  for (const device of Object.values(store.getDevices())) {
+    try {
+      const patch = notifier.checkStale(device);
+      if (patch) store.upsertDevice(device.id, patch);
+    } catch (e) { logLine('ERROR', `old reading check failed: ${e && e.message}`); }
+  }
+}
+
 function restartPoller() {
   poller.restart(broadcast);
 }
@@ -254,6 +267,9 @@ app.whenReady().then(() => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('devices-changed');
   });
   poller.start(broadcast);
+  // A device with no reading sends no updates, so its old reading alert is checked on a clock.
+  checkStaleReadings();
+  setInterval(checkStaleReadings, STALE_CHECK_MS);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow(true);
@@ -332,6 +348,13 @@ ipcMain.handle('devices:set-icon', (evt, { id, icon }) => {
   return store.upsertDevice(id, { customIcon: icon || null });
 });
 
+// Old reading alert for one device: days its last reading may age (null = off, the default).
+ipcMain.handle('devices:set-stale-alert', (evt, { id, days }) => {
+  const saved = store.upsertDevice(id, { staleAlertDays: notifier.staleDaysOf(days) });
+  checkStaleReadings();
+  return saved;
+});
+
 // Low battery level for one device (null = use the level in Settings).
 ipcMain.handle('devices:set-alert', (evt, { id, threshold }) => {
   const n = Number(threshold);
@@ -385,6 +408,7 @@ ipcMain.handle('settings:set', (evt, patch) => {
   if ('theme' in patch) applyTheme();
   if ('launchAtLogin' in patch || 'startMinimized' in patch) applyLoginItem();
   if ('pollIntervalSec' in patch) restartPoller();
+  if ('notifyStale' in patch || 'notifyStaleDays' in patch) checkStaleReadings();
   if ('trayEnabled' in patch && !patch.trayEnabled) tray.destroyAll();
   if ('trayEnabled' in patch && patch.trayEnabled) restartPoller();
   if ('trayMode' in patch) {

@@ -71,6 +71,7 @@ const PATTERNS = [
     he: (m) => `כמו בהגדרות (${m[1]}%)`,
     pt: (m) => `Igual às Configurações (${m[1]}%)`,
   }],
+  [/^Same as Settings \((\d+) days?\)$/, { pt: (m) => `Igual às Configurações (${m[1]} ${m[1] === '1' ? 'dia' : 'dias'})` }],
   [/^Charging, (\d+)%$/, { es: (m) => `Cargando, ${m[1]}%`, zh: (m) => `充电中，${m[1]}%`, he: (m) => `בטעינה, ${m[1]}%`, pt: (m) => `Carregando, ${m[1]}%` }],
   [/^(\d+) hidden devices?$/, {
     es: (m) => (m[1] === '1' ? '1 dispositivo oculto' : `${m[1]} dispositivos ocultos`),
@@ -122,6 +123,10 @@ const PATTERNS = [
     zh: (m) => `${m[1]} 已充满（${m[2]}%）。`,
     he: (m) => `${m[1]} טעון (${m[2]}%).`,
     pt: (m) => `Carga completa: ${m[1]} (${m[2]}%).`,
+  }],
+  // The old reading alert (notifier.js). Only Portuguese so far; the others show the English.
+  [/^(.+): last reading (\d+) days? ago\. Connect it in a way Battery Hub can read, like Bluetooth, to update it\.$/, {
+    pt: (m) => `${m[1]}: última leitura há ${m[2]} ${m[2] === '1' ? 'dia' : 'dias'}. Conecte-o de um jeito que o Battery Hub consiga ler, como o Bluetooth, para atualizar.`,
   }],
   // The check in Settings > Help (diagnostics.js). Only Portuguese has these so far: the others
   // show the English until someone translates them.
@@ -202,6 +207,7 @@ function ruDiagnosticAgo(text) {
 }
 
 const RU_PATTERNS = [
+  [/^(.+): last reading (\d+) days? ago\. Connect it in a way Battery Hub can read, like Bluetooth, to update it\.$/, (m) => `Устройство «${m[1]}»: последние данные получены ${m[2]} ${ruPlural(m[2], 'день', 'дня', 'дней')} назад. Подключите его так, чтобы Battery Hub мог прочитать заряд, например по Bluetooth.`],
   [/^All (\d+) files match what was shipped\.$/, (m) => `${m[1]} ${ruPlural(m[1], 'файл соответствует', 'файла соответствуют', 'файлов соответствуют')} исходной поставке.`],
   [/^(\d+) of (\d+) files are missing or changed\.$/, (m) => `${m[1]} из ${m[2]} файлов отсутствуют или изменены.`],
   [/^You have (\S+), the latest version\.$/, (m) => `Установлена актуальная версия ${m[1]}.`],
@@ -237,6 +243,7 @@ const RU_PATTERNS = [
   [/^([\d.]+)% a day$/, (m) => `${m[1]}% в день`],
   [/^([\d.]+)% an hour$/, (m) => `${m[1]}% в час`],
   [/^Same as Settings \((\d+)%\)$/, (m) => `Как в настройках (${m[1]}%)`],
+  [/^Same as Settings \((\d+) days?\)$/, (m) => `Как в настройках (${m[1]} ${ruPlural(m[1], 'день', 'дня', 'дней')})`],
   [/^Charging, (\d+)%$/, (m) => `Заряжается, ${m[1]}%`],
   [/^(\d+) hidden devices?$/, (m) => `${m[1]} ${ruPlural(m[1], 'скрытое устройство', 'скрытых устройства', 'скрытых устройств')}`],
   [/^(.*) · (\d+) channels?$/, (m) => `${m[1]} · ${m[2]} ${ruPlural(m[2], 'канал', 'канала', 'каналов')}`],

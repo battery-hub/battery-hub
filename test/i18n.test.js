@@ -81,6 +81,18 @@ test('Brazilian Portuguese notifications do not depend on the gender of the devi
   assert.equal(bhTranslate('MX Master 4 is charged (100%).', 'pt'), 'Carga completa: MX Master 4 (100%).');
 });
 
+test('the old reading alert reads well in Portuguese', () => {
+  const { ALERTS } = require('../src/main/notifier');
+  const pt = (t) => bhTranslate(t, 'pt');
+  const three = ALERTS.stale('Fuxi-H6', 3);
+  assert.equal(pt(three.title), 'Leitura antiga');
+  assert.equal(pt(three.body), 'Fuxi-H6: última leitura há 3 dias. Conecte-o de um jeito que o Battery Hub consiga ler, como o Bluetooth, para atualizar.');
+  assert.equal(pt('Same as Settings (2 days)'), 'Igual às Configurações (2 dias)');
+  assert.equal(pt('Same as Settings (1 day)'), 'Igual às Configurações (1 dia)');
+  assert.equal(bhTranslate('Same as Settings (2 days)', 'ru'), 'Как в настройках (2 дня)');
+  assert.equal(pt(ALERTS.stale('MX Keys Mini', 1).body), 'MX Keys Mini: última leitura há 1 dia. Conecte-o de um jeito que o Battery Hub consiga ler, como o Bluetooth, para atualizar.');
+});
+
 test('every language has the same keys', () => {
   const keys = (l) => Object.keys(BH_STRINGS[l]).sort().join('|');
   assert.equal(keys('es'), keys('zh'));
