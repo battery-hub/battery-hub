@@ -580,3 +580,73 @@ test('YJX-chip receivers answer the gmouse battery request on 0xFF01/0x0010', ()
   assert.equal(detectDriver({ vendorId: 0xa8a5, productId: 0x2255, channels: [ch(1, 2), ch(0xffa5, 0x88), ch(0xff01, 0x10)] }).id, 'yjx');
   assert.equal(detectDriver({ vendorId: 0x249a, productId: 0x5c2f, channels: [ch(1, 2), ch(0xff01, 0x10)] }).id, 'yjx');
 });
+
+test('G3 A revisions use Gmouse by branded model name on the vendor channel', () => {
+  const yjx = require('../src/main/hid/drivers/yjx');
+  const device = (fields = {}) => ({
+    vendorId: 0x3837, productId: 0x9999, product: 'MCHOSE G3 A',
+    channels: [{ usagePage: 1, usage: 2 }, { usagePage: 0xff01, usage: 0x10 }],
+    ...fields,
+  });
+  for (const fields of [
+    { product: 'G3A' },
+    { product: 'g3 a Mouse' },
+    { vendorId: 0x9999, manufacturer: 'MCHOSE', product: 'G3A Mouse' },
+    { vendorId: 0x9999, product: 'mchose g3a' },
+    { vendorId: 0x9999, manufacturer: '迈从', product: 'G3 A' },
+  ]) {
+    assert.equal(detectDriver(device(fields)).id, 'yjx', JSON.stringify(fields));
+  }
+  for (const fields of [
+    { vendorId: 0x9999, product: 'OtherBrand G3A', manufacturer: 'OtherBrand' },
+    { product: 'MCHOSE G3 Ultra' },
+    { product: 'MCHOSE G3AB' },
+    { product: '' },
+    { channels: [{ usagePage: 1, usage: 2 }] },
+    { channels: [{ usagePage: 0xff01, usage: 1 }] },
+  ]) {
+    assert.equal(yjx.matches(device(fields)), false, JSON.stringify(fields));
+  }
+  const realtek = device({ productId: 0x4150, product: 'MCHOSE A5 Ultra' });
+  assert.equal(detectDriver(realtek).id, 'mchose-mouse');
+});
+
+test('G3 A checks online status before accepting a receiver battery cached while off', async () => {
+  const exchange = require('../src/main/hid/drivers/exchange');
+  const original = exchange.exchange;
+  const driverPath = require.resolve('../src/main/hid/drivers/yjx');
+  const cached = require.cache[driverPath];
+  let online = false;
+  const commands = [];
+  exchange.exchange = async (channel, request, accept) => {
+    commands.push(request[2]);
+    if (request[2] === 0xed && online === null) throw new Error('timeout waiting for battery response');
+    if (request[2] === 0xed) return accept([0xaa, 0xed, 0, 0, 0, 0, 0, 0, online ? 2 : 1]);
+    return accept([0xaa, 0x30, 0, 0, 0, 0, 0, 0, 68, 0]);
+  };
+  delete require.cache[driverPath];
+  try {
+    const yjx = require(driverPath);
+    const device = { vendorId: 0x3837, productId: 0x9999, product: 'G3 A', channels: [{ path: 'g3a', usagePage: 0xff01, usage: 0x10 }] };
+    await assert.rejects(yjx.readBattery(device), /^Error: mouse is off$/);
+    assert.deepEqual(commands, [0xed]);
+    online = true;
+    commands.length = 0;
+    assert.deepEqual(await yjx.readBattery(device), { capacity: 68, charging: false });
+    assert.deepEqual(commands, [0xed, 0x30]);
+    online = null;
+    commands.length = 0;
+    const legacy = { ...device, vendorId: 0xa8a5, productId: 0x2255 };
+    assert.deepEqual(await yjx.readBattery(legacy), { capacity: 68, charging: false });
+    assert.deepEqual(commands, [0xed, 0x30]);
+    commands.length = 0;
+    await yjx.readBattery({ ...legacy, product: 'Wireless Receiver' });
+    assert.deepEqual(commands, [0x30]);
+    assert.equal(yjx.parseStatus([0xaa, 0xed]), null);
+    assert.equal(yjx.parseStatus([0xaa, 0x30, 0, 0, 0, 0, 0, 0, 2]), null);
+    assert.equal(yjx.parseStatus([0xaa, 0xed, 0, 0, 0, 0, 0, 0, 255]), null);
+  } finally {
+    exchange.exchange = original;
+    require.cache[driverPath] = cached;
+  }
+});
