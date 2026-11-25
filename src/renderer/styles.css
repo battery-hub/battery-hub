@@ -731,6 +731,9 @@ html, body {
 .segmented button:hover { color: var(--text); }
 .segmented button:active { transform: scale(0.92); }
 .segmented button.active { color: var(--text); }
+/* Keep short Russian segment labels on one line without changing other locales. */
+html[lang="ru"] .segmented button { white-space: nowrap; padding-inline: 8px; }
+html[lang="ru"] .settings-label { min-width: 0; }
 
 
 

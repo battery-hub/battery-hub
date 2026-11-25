@@ -20,7 +20,8 @@
   }
 
   function attrs(el) {
-    if (skipped(el)) return;
+    // Form values are user input, but placeholder and aria-label are translatable UI attributes.
+    if (!el || el.nodeName === 'SCRIPT' || el.nodeName === 'STYLE' || (el.closest && el.closest('[data-no-translate]'))) return;
     el.bhAttrs = el.bhAttrs || {};
     for (const name of ATTRS) {
       const value = el.getAttribute(name);
