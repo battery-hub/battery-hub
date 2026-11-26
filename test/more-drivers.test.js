@@ -58,3 +58,9 @@ test('Darmoshark answers feature report 0x51, Telink mice get a summed retry, AU
   assert.equal(aula.request.slice(1, 32).reduce((a, b) => a + b, 0) & 0xff, aula.request[32]);
   assert.deepEqual(aula.parse([0x20, 0x01, 0x00, 76]), { capacity: 76 });
 });
+
+test('a Bluetooth LE battery read joins the same device seen as HID', () => {
+  const { identityOf } = require('../src/main/identity');
+  assert.equal(identityOf({ id: 'ble:D228599C0140' }), 'mac:d228599c0140');
+  assert.equal(identityOf({ id: 'bt:BTHLE\Dev_d228599c0140\8&1420c792&0&d228599c0140' }), 'mac:d228599c0140');
+});

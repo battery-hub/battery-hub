@@ -14,7 +14,7 @@ function identityOf(device) {
   // A device on a Lightspeed receiver shares the receiver's serial with its neighbours, so the
   // serial says nothing about which device it is.
   if (RECEIVER_CHILD.test(id)) return null;
-  const windows = /dev_([0-9a-f]{12})/.exec(id);
+  const windows = /dev_([0-9a-f]{12})/.exec(id) || /^ble:([0-9a-f]{12})$/.exec(id);
   if (windows) return `mac:${windows[1]}`;
   const serial = device.serialNumber === undefined ? id.split(':')[2] || '' : device.serialNumber.toLowerCase();
   return address(serial);

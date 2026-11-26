@@ -8,10 +8,11 @@
 // A level of 0 over the receiver means the mouse is off.
 const { exchange, pad } = require('./exchange');
 
-const REQUEST = pad([0x04, 0x00, 0x00, 0x1a, 0x06], 64);
+// Eight bytes: hidapi pads a write to the report's real length, and one longer than it fails.
+const REQUEST = pad([0x04, 0x00, 0x00, 0x1a, 0x06], 8);
 // Wobkey's driver for the Telink mice on the same collection (issues #11, #65, #134, #193) fills in
 // bytes 1-2 as the 16-bit sum of the command bytes; Akko's leaves them 0. Telink firmware may want it.
-const REQUEST_SUMMED = pad([0x04, 0x20, 0x00, 0x1a, 0x06], 64);
+const REQUEST_SUMMED = pad([0x04, 0x20, 0x00, 0x1a, 0x06], 8);
 const channelOf = (d) => d.channels.find((c) => c.usagePage === 0xff1c && c.usage === 0x92);
 
 function matches(logicalDevice) {

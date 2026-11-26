@@ -12,6 +12,7 @@ const PROGRAM = path.join(__dirname, 'system-batteries.exe');
 const BLE_PROGRAM = path.join(__dirname, 'ble-batteries.exe');
 const BLE_EVERY_MS = 5 * 60 * 1000;
 const BLE_TIMEOUT_MS = 60000;
+const BLE_SCAN_WAIT_MS = 8000;
 const SCRIPT = path.join(__dirname, 'system-batteries.ps1');
 const ARGS = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', SCRIPT];
 
@@ -68,9 +69,12 @@ function runScript() {
 // One fresh look, for the Add device list.
 async function scan() {
   if (process.platform !== 'win32') return [];
-  const [{ list }, leList] = await Promise.all([runScript(), readBle()]);
+  // The Bluetooth LE read can take a while per sleeping device, so the list doesn't wait for it long:
+  // what it hasn't read yet shows up on the next look.
+  const wait = new Promise((resolve) => setTimeout(resolve, BLE_SCAN_WAIT_MS));
+  const [{ list }] = await Promise.all([runScript(), Promise.race([readBle(), wait])]);
   if (list) remember(list);
-  return (list || []).concat(leList);
+  return (list || []).concat(Array.from(ble.values()));
 }
 
 // For the support check: can PowerShell run the script at all?

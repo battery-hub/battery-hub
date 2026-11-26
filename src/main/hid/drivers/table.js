@@ -16,10 +16,10 @@ const clampPercent = (v) => Math.min(100, Math.max(0, v));
 // ASUS ROG mice, as G-Helper reads them (AsusMouse.cs): 12 07 asks for the battery. The reply is
 // 12 07 .. .. <level> .. .. .. .. <charging>, one byte later behind a report id; FF AA = asleep.
 function asusMouse(f) {
-  const o = f[0] === 0x03 && f[1] === 0x12 ? 1 : 0;
+  const o = f[0] === 0x03 ? 1 : 0;
+  if (f[o] === 0xff && f[o + 1] === 0xaa) return OFFLINE; // asleep, or nothing paired to the receiver
   if (f.length < 10 + o || f[o] !== 0x12 || f[o + 1] !== 0x07) return null;
-  if (f[o + 4] === 0xff && f[o + 5] === 0xaa) return OFFLINE;
-  const charging = f[o + 9] === 1;
+  const charging = f[o + 9] !== 0;
   if (f[o + 4] > 100 || (f[o + 4] === 0 && !charging)) return OFFLINE;
   return { capacity: f[o + 4], charging };
 }
@@ -373,8 +373,8 @@ const DEVICES = [
     steps: [{
       request: pad([0x00, 0x12, 0x01], 65),
       parse(f) {
+        if ((f[0] === 0xff && f[1] === 0xaa) || (f[0] === 0x12 && f[5] === 0xff && f[6] === 0xaa)) return OFFLINE;
         if (f.length < 9 || f[0] !== 0x12 || f[1] !== 0x01) return null;
-        if (f[5] === 0xff && f[6] === 0xaa) return OFFLINE;
         if (f[5] < 1 || f[5] > 100) return null;
         return { capacity: f[5], charging: f[8] === 1 };
       },
@@ -416,8 +416,11 @@ const DEVICES = [
     channel: { usagePage: 0xff0d, usage: 0xb0 },
     steps: [{
       request: pad([0x00, 0x0f, 0x20], 65),
-      parse: (f) => (f.length < 15 || f[0] !== 0x0f || f[1] !== 0x20 || (f[14] & 0x7f) === 0 ? null
-        : { capacity: clampPercent(f[14] & 0x7f), charging: !!(f[14] & 0x80) }),
+      parse(f) {
+        if (f.length < 15 || f[0] !== 0x0f || f[1] !== 0x20 || (f[14] & 0x7f) > 100) return null;
+        if (f[14] === 0) return OFFLINE; // level 0 and not charging: asleep or off
+        return { capacity: f[14] & 0x7f, charging: !!(f[14] & 0x80) };
+      },
     }],
   },
   {

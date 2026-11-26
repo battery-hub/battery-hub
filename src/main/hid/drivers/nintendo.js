@@ -17,7 +17,9 @@ const VENDOR = 0x057e;
 const PRODUCTS = new Set([0x2009, 0x2006, 0x2007]); // Pro Controller, Joy-Con (L), Joy-Con (R)
 const LEVELS = [10, 25, 50, 75, 100];
 const DEVICE_INFO = 0x02;
-const LENGTH = 49;
+// Only the bytes that matter: hidapi pads a short write to the report's real length, while a write
+// longer than it fails, and clones don't all declare the same length.
+const LENGTH = 11;
 
 const channelOf = (d) => d.channels.find((c) => c.usagePage === 0x01 && (c.usage === 0x05 || c.usage === 0x04));
 

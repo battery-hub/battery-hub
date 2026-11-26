@@ -815,7 +815,7 @@ test('Akko 8K receivers and others with the 0xFF1C/0x0092 collection ask with re
   const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
   assert.equal(detectDriver({ vendorId: 0x38ee, productId: 0x0024, channels: [ch(1, 2), ch(0xff1c, 0x92), ch(0xff01, 1)] }).id, 'akko');
   assert.deepEqual(akko.REQUEST.slice(0, 6), [0x04, 0x00, 0x00, 0x1a, 0x06, 0x00]);
-  assert.equal(akko.REQUEST.length, 64);
+  assert.equal(akko.REQUEST.length, 8);
   assert.deepEqual(akko.parseReply([0x04, 0x1c, 0x00, 0x1a, 0x02, 0, 0, 0, 0x5d, 0]), { capacity: 93, charging: false });
   assert.deepEqual(akko.parseReply([0x04, 0x1c, 0x00, 0x1a, 0x02, 0, 0, 0, 60, 1]), { capacity: 60, charging: true });
   assert.equal(akko.parseReply([0x04, 0x1c, 0x00, 0x1a, 0x02, 0, 0, 0, 0, 0]).offline, true);
@@ -849,7 +849,12 @@ test('ASUS ROG mice, MSI VERSA 300, Waizowl OGM 8K and the Void v2 on its cable'
   const gladius = entry(0x0b05, 0x1a72).steps[0];
   assert.deepEqual(gladius.request.slice(0, 3), [0x00, 0x12, 0x07]);
   assert.deepEqual(gladius.parse(frame([0x12, 0x07, 0, 0, 66, 0, 0, 0, 0, 1])), { capacity: 66, charging: true });
-  assert.equal(gladius.parse(frame([0x12, 0x07, 0, 0, 0xff, 0xaa, 0, 0, 0, 0])).offline, true);
+  assert.equal(gladius.parse(frame([0xff, 0xaa, 0, 0, 0, 0, 0, 0, 0, 0])).offline, true);
+  assert.equal(gladius.parse(frame([0x12, 0x07, 0, 0, 0, 0, 0, 0, 0, 0])).offline, true);
+  assert.equal(entry(0x0b05, 0x1ace).steps[0].parse(frame([0x03, 0xff, 0xaa, 0, 0, 0, 0, 0, 0, 0, 0])).offline, true);
+  assert.equal(entry(0x0b05, 0x196b).steps[0].parse(frame([0xff, 0xaa, 0, 0, 0, 0, 0, 0, 0])).offline, true);
+  const asleep = new Array(16).fill(0); asleep[0] = 0x0f; asleep[1] = 0x20;
+  assert.equal(entry(0x0db0, 0x9e22).steps[0].parse(asleep).offline, true);
   const omni = entry(0x0b05, 0x1ace).steps[0];
   assert.deepEqual(omni.request.slice(0, 3), [0x03, 0x12, 0x07]);
   assert.deepEqual(omni.parse(frame([0x03, 0x12, 0x07, 0, 0, 40, 0, 0, 0, 0, 0])), { capacity: 40, charging: false });

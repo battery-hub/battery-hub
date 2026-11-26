@@ -17,9 +17,9 @@ test('the battery comes from byte 2 of reports 0x21 and 0x30', () => {
   assert.equal(nintendo.parseReport([0x3f, 0x00, 0x80]), null);
 });
 
-test('the request asks for device info with no rumble, in a full-length output report', () => {
+test('the request asks for device info with no rumble, short enough for any clone', () => {
   const r = nintendo.request();
-  assert.equal(r.length, 49);
+  assert.equal(r.length, 11);
   assert.deepEqual(r.slice(2, 11), [0x00, 0x01, 0x40, 0x40, 0x00, 0x01, 0x40, 0x40, 0x02]);
   assert.equal(r[0], 0x01);
 });
