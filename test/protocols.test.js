@@ -809,3 +809,25 @@ test('the MCHOSE A7 V2 Pro receiver (3837:100a) is read like the A7 V2 Ultra', (
   const device = { vendorId: 0x3837, productId: 0x100a, channels: [ch(1, 2), ch(1, 6), ch(0xff0b, 0x104), ch(0xff01, 1), ch(0x0c, 1)] };
   assert.equal(detectDriver(device).id, 'mchose-mouse');
 });
+
+test('Akko 8K receivers and others with the 0xFF1C/0x0092 collection ask with report 4, command 0x1A', () => {
+  const akko = require('../src/main/hid/drivers/akko');
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  assert.equal(detectDriver({ vendorId: 0x38ee, productId: 0x0024, channels: [ch(1, 2), ch(0xff1c, 0x92), ch(0xff01, 1)] }).id, 'akko');
+  assert.deepEqual(akko.REQUEST.slice(0, 6), [0x04, 0x00, 0x00, 0x1a, 0x06, 0x00]);
+  assert.equal(akko.REQUEST.length, 64);
+  assert.deepEqual(akko.parseReply([0x04, 0x1c, 0x00, 0x1a, 0x02, 0, 0, 0, 0x5d, 0]), { capacity: 93, charging: false });
+  assert.deepEqual(akko.parseReply([0x04, 0x1c, 0x00, 0x1a, 0x02, 0, 0, 0, 60, 1]), { capacity: 60, charging: true });
+  assert.equal(akko.parseReply([0x04, 0x1c, 0x00, 0x1a, 0x02, 0, 0, 0, 0, 0]).offline, true);
+  assert.equal(akko.parseReply([0x04, 0x1c, 0x00, 0x1b, 0x02, 0, 0, 0, 50, 0]), null);
+});
+
+test('VGN Dragonfly 3 uses the VXE protocol, VGN YJX mice use YJX, and LAMZU 0x37B0 mice use the Glorious one', () => {
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  const compxLayout = [ch(1, 2), ch(0xff02, 2), ch(0xff04, 2)];
+  assert.equal(detectDriver({ vendorId: 0x391d, productId: 0x101d, channels: compxLayout }).id, 'kysona');
+  assert.equal(detectDriver({ vendorId: 0x391d, productId: 0x1a1a, channels: compxLayout }).id, 'kysona');
+  assert.notEqual((detectDriver({ vendorId: 0x391d, productId: 0x9999, channels: compxLayout }) || {}).id, 'kysona');
+  assert.equal(detectDriver({ vendorId: 0x391d, productId: 0x1a01, channels: [ch(0xff01, 0x10)] }).id, 'yjx');
+  assert.equal(detectDriver({ vendorId: 0x37b0, productId: 0x0001, channels: [ch(0xffa0, 1), ch(0xffff, 1)] }).id, 'sinowealth');
+});

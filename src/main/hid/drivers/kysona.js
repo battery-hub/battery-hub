@@ -33,8 +33,15 @@ const COMPX_CHIP_VENDOR_IDS = new Set([0x373b, 0x25a7, 0x260d]);
 const hasCollection = (logicalDevice, usagePage, usage) => logicalDevice.channels.some((c) => c.usagePage === usagePage && c.usage === usage);
 const hasCompxLayout = (logicalDevice) => hasCollection(logicalDevice, 0xff02, 0x0002) && hasCollection(logicalDevice, 0xff04, 0x0002);
 
+// VGN (0x391D) puts several protocols under one vendor id. These mice and receivers are the ones
+// its web driver (drive.vgnlab.com.cn, type "vgn-y2") reads with this protocol, byte for byte:
+// Dragonfly 3 MasterGT 391d:101d with receiver 391d:1a1a (issue #235), and its siblings.
+const VGN = 0x391d;
+const VGN_COMPX_PIDS = new Set([0x1005, 0x1a05, 0x101d, 0x1a1a, 0x1032, 0x102d, 0x1034, 0x1a2f, 0x1035, 0x1a30, 0x1036, 0x1a31, 0x1038, 0x1a32, 0x1039, 0x1a33]);
+
 function matches(logicalDevice) {
   if (compx.matches(logicalDevice)) return false;
+  if (logicalDevice.vendorId === VGN) return VGN_COMPX_PIDS.has(logicalDevice.productId) && hasCollection(logicalDevice, 0xff02, 0x0002);
   if (KNOWN_VENDOR_IDS.has(logicalDevice.vendorId)) return !!findChannel(logicalDevice, USAGE_PAGE_COMMAND);
   return COMPX_CHIP_VENDOR_IDS.has(logicalDevice.vendorId) && hasCompxLayout(logicalDevice);
 }

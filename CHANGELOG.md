@@ -8,6 +8,9 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Akko 8K receivers (38ee:0024, 000f) and other mice on the same platform, from Akko's own web driver (issues #226, #9).
+- VGN Dragonfly 3 MasterGT and its siblings, and VGN's YJX mice, from VGN's web driver (issue #235).
+- More LAMZU mice: TACHI, INCA, Maya, PARO, THORN, Atlantis OG and Mini, under LAMZU's second vendor id 0x37B0.
 - MCHOSE V9 Pro 2 headset (3837:6011), with the protocol from MCHOSE's own M HUB (issue #229), and the A7 V2 Pro
   mouse's receiver 3837:100a (issue #234).
 - Nintendo Switch Pro Controllers, their clones and Joy-Cons over Bluetooth, in five steps (issue #232).

@@ -108,8 +108,10 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | Astro | A50 Gen 4, A50 Gen 5 |
 | MCHOSE | V9 Turbo+, V9 PRO, V9 Pro 2, X9 headsets; A7 V2 Ultra, A7 V2 Pro, A5 Ultra, K7 Ultra, A7 Ultra, G3 A mice; G75 V2, G87 V2, K87S, K99 V3 keyboards |
 | VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers; ATK NearLink and BitMouse receivers, X1 NearLink; ATK 8K Nano and 1K/8K dongles |
-| Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X and other LAMZU mice |
+| Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X, Atlantis OG and Mini, TACHI, INCA, PARO, THORN and other LAMZU mice |
 | Beken/Xenta 2.4G receiver | Attack Shark and other mice on 1d57:fa60 and fa55 |
+| Akko | Mice on the Akko 8K receiver, and others on the same platform |
+| VGN | Dragonfly 3 MasterGT and other VGN mice |
 | Keychron, SKN | Mice on the Ultra-Link 8K receiver |
 | YJX-chip 2.4G receiver | AJAZZ, XCTECH and other mice on YJX receivers (the same platform as MCHOSE G-series mice) |
 | Compx 2.4G receiver | AULA F87 Pro and F99 Pro, Lingbao K98, MCHOSE G75 keyboards |
