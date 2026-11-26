@@ -6,6 +6,7 @@
 // the main app detects the exit and respawns it, losing at most one poll cycle.
 const { listLogicalDevices } = require('./catalog');
 const { driverById } = require('./drivers');
+const { expandReceivers } = require('./drivers/lightspeed');
 const { capture } = require('./inspector');
 
 // Scans in progress, so a Cancel from the window can stop them. Messages are handled as they
@@ -13,7 +14,7 @@ const { capture } = require('./inspector');
 const scans = new Set();
 
 async function handle(id, cmd, args) {
-  if (cmd === 'enumerate') return listLogicalDevices();
+  if (cmd === 'enumerate') return expandReceivers(await listLogicalDevices(), { fresh: !!(args[0] && args[0].fresh) });
   if (cmd === 'cancelCapture') {
     for (const scan of scans) scan.abort();
     return scans.size > 0;

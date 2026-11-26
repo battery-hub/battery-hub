@@ -4,12 +4,16 @@
 // The Bluetooth address is the proof they are the same device. It is in the HID serial number on
 // Bluetooth and in the Windows device id, and PlayStation controllers report it over USB too.
 const ADDRESS = /^[0-9a-f]{12}$/;
+const RECEIVER_CHILD = /^[^:]*:[^:]*:[^:]*:[0-9a-f]{4}$/; // receiver id + wireless PID
 
 const address = (text) => (ADDRESS.test(text) ? `mac:${text}` : null);
 
 function identityOf(device) {
   if (device.identity) return device.identity;
   const id = String(device.id || '').toLowerCase();
+  // A device on a Lightspeed receiver shares the receiver's serial with its neighbours, so the
+  // serial says nothing about which device it is.
+  if (RECEIVER_CHILD.test(id)) return null;
   const windows = /dev_([0-9a-f]{12})/.exec(id);
   if (windows) return `mac:${windows[1]}`;
   const serial = device.serialNumber === undefined ? id.split(':')[2] || '' : device.serialNumber.toLowerCase();
@@ -48,4 +52,21 @@ function planMerges(devices) {
   return plans;
 }
 
-module.exports = { identityOf, address, routesOf, planMerges };
+// A Lightspeed receiver's card from before its devices got cards of their own goes to the device it
+// was reading: the one in the lowest slot. [{ from: card, to: live device }]
+function planReceiverMoves(devices, live) {
+  const cards = Object.values(devices);
+  const moves = [];
+  for (const parent of live.filter((d) => d.expanded)) {
+    const card = devices[parent.id];
+    if (!card || card.driverId !== 'hidpp') continue;
+    const children = live.filter((d) => d.receiver && d.id.startsWith(`${parent.id}:`));
+    if (!children.length) continue;
+    const first = children.reduce((a, b) => (b.receiver.slot < a.receiver.slot ? b : a));
+    if (cards.some((c) => routesOf(c).some((r) => r.id === first.id))) continue; // it has a card already
+    moves.push({ from: card, to: first });
+  }
+  return moves;
+}
+
+module.exports = { identityOf, address, routesOf, planMerges, planReceiverMoves };

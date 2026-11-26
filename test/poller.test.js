@@ -7,6 +7,10 @@ const devices = {};
 const store = {
   getDevices: () => devices,
   upsertDevice: (id, patch) => { devices[id] = { ...(devices[id] || {}), ...patch, id }; return devices[id]; },
+  moveDevice: (fromId, toId, patch) => {
+    devices[toId] = { ...devices[fromId], ...patch, id: toId };
+    delete devices[fromId];
+  },
   getPollIntervalSec: () => 60,
 };
 let finishRead;
@@ -32,6 +36,8 @@ Module._load = function (request, ...rest) {
 };
 const poller = require('../src/main/poller');
 Module._load = load;
+
+const { identityOf } = require('../src/main/identity');
 
 const flush = async () => { for (let i = 0; i < 6; i++) await new Promise((r) => setImmediate(r)); };
 const addMouse = () => { devices.mouse = { id: 'mouse', driverId: 'generic', product: 'Mouse' }; };
@@ -223,4 +229,101 @@ test('a refresh asked for while a check is running waits for it instead of being
   await second;
   assert.equal(refreshed, 1);
   assert.equal(devices.mouse.lastReading.capacity, 49);
+});
+
+test('a refresh asks the worker to list receivers afresh, a routine poll does not', async () => {
+  const seen = [];
+  const original = hidClient.enumerate;
+  hidClient.enumerate = async (options) => { seen.push(options); return []; };
+  devices.pad = { id: 'pad', driverId: 'generic' }; // not connected, so the poll lists devices again
+  try {
+    await poller.pollOnce(() => {}, { force: true });
+    assert.ok(seen.length >= 2);
+    assert.equal(seen[0] && seen[0].fresh, true);
+    assert.ok(seen.slice(1).every((o) => !(o && o.fresh)));
+  } finally {
+    hidClient.enumerate = original;
+    delete devices.pad;
+  }
+});
+
+test('two cards on one receiver keep their own settings when the devices swap slots', async () => {
+  const serial = '0123456789ab';
+  const parentId = `1133:50503:${serial}`;
+  const kb = `${parentId}:408e`;
+  const ms = `${parentId}:409f`;
+  const now = Date.now();
+  devices[kb] = { id: kb, driverId: 'hidpp', customName: 'Desk keyboard', customIcon: '⌨️', order: 0, hidden: false, history: [{ t: now - 60000, c: 50, ch: 0 }] };
+  devices[ms] = { id: ms, driverId: 'hidpp', customName: 'Gaming mouse', customIcon: '🖱️', order: 1, hidden: true, history: [{ t: now - 120000, c: 60, ch: 0 }] };
+  const before = JSON.parse(JSON.stringify({ kb: devices[kb], ms: devices[ms] }));
+
+  const parent = { id: parentId, serialNumber: serial, expanded: true, channels: [] };
+  const child = (id, wpid, slot) => ({ id, serialNumber: serial, channels: [], receiver: { slot, wpid, kind: 1 } });
+  const listings = [
+    [parent, child(kb, 0x408e, 1), child(ms, 0x409f, 2)],
+    [parent, child(ms, 0x409f, 1), child(kb, 0x408e, 2)],
+  ];
+  let listing = 0;
+  const reads = [];
+  const { enumerate, readBattery } = hidClient;
+  hidClient.enumerate = async () => listings[Math.min(listing++, 1)];
+  hidClient.readBattery = async (driverId, device) => {
+    reads.push(device);
+    return { capacity: device.receiver.wpid === 0x408e ? 95 : 81, charging: false };
+  };
+  try {
+    await poller.pollOnce(() => {}, { force: true });
+    await poller.pollOnce(() => {}, { force: true });
+
+    assert.ok(devices[kb] && devices[ms], 'both cards are kept');
+    for (const [id, was] of [[kb, before.kb], [ms, before.ms]]) {
+      for (const key of ['customName', 'customIcon', 'order', 'hidden']) assert.deepEqual(devices[id][key], was[key], `${id} ${key}`);
+    }
+    assert.equal(devices[kb].history[0].c, 50);
+    assert.equal(devices[kb].history[devices[kb].history.length - 1].c, 95);
+    assert.equal(devices[kb].lastReading.capacity, 95);
+    assert.deepEqual(devices[ms].history, before.ms.history);
+    assert.equal(devices[ms].lastReading, undefined);
+    assert.equal(reads.filter((d) => d.id === kb).pop().receiver.slot, 2);
+  } finally {
+    hidClient.enumerate = enumerate;
+    hidClient.readBattery = readBattery;
+    delete devices[kb];
+    delete devices[ms];
+  }
+});
+
+test("a receiver's old card becomes the card of the device it was reading, keeping its settings", async () => {
+  const serial = '0123456789ab';
+  const parentId = `1133:50503:${serial}`;
+  const kb = `${parentId}:408e`;
+  const now = Date.now();
+  devices[parentId] = {
+    id: parentId, driverId: 'hidpp', product: 'USB Receiver', identity: `mac:${serial}`, customName: 'Desk keyboard', customIcon: '⌨️',
+    alertThreshold: 15, order: 3, hidden: false, history: [{ t: now - 60000, c: 50, ch: 0 }],
+  };
+  const parent = { id: parentId, serialNumber: serial, expanded: true, channels: [] };
+  const child = (id, wpid, slot, product) => ({ id, serialNumber: serial, product, channels: [], receiver: { slot, wpid, kind: 1 } });
+  const { enumerate, readBattery } = hidClient;
+  hidClient.enumerate = async () => [parent, child(`${parentId}:409f`, 0x409f, 2, 'G502 X LS'), child(kb, 0x408e, 1, 'G913 TKL')];
+  hidClient.readBattery = async () => ({ capacity: 95, charging: false });
+  try {
+    await poller.pollOnce(() => {}, { force: true });
+    assert.equal(devices[parentId], undefined);
+    const card = devices[kb];
+    assert.ok(card, 'the keyboard has the card');
+    assert.equal(card.product, 'G913 TKL');
+    assert.equal(identityOf(card), null, 'the receiver serial is not carried over as the device identity');
+    for (const [key, value] of [['customName', 'Desk keyboard'], ['customIcon', '⌨️'], ['alertThreshold', 15], ['order', 3], ['hidden', false], ['driverId', 'hidpp']]) {
+      assert.deepEqual(card[key], value, key);
+    }
+    assert.equal(card.history[0].c, 50);
+    assert.equal(card.lastReading.capacity, 95);
+    assert.equal(devices[`${parentId}:409f`], undefined, 'the other device is left for Add device');
+  } finally {
+    hidClient.enumerate = enumerate;
+    hidClient.readBattery = readBattery;
+    delete devices[kb];
+    delete devices[parentId];
+  }
 });
