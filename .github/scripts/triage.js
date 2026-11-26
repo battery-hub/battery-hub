@@ -115,7 +115,7 @@ function cleanName(name) {
     .replace(/\|/g, '/')
     .replace(/\s+/g, ' ').trim();
   n = n.replace(/^(\S+)\s+(?=\1\b)/i, '');           // "Razer Razer Viper" -> "Razer Viper"
-  if (n.length > 30) n = n.split(/(?<=\S{3}),\s|\.\s|\s\(/)[0];  // "Fuxi-H6 (headset), dongle ..." -> "Fuxi-H6"
+  if (n.length > 45) n = n.split(/(?<=\S{3}),\s|\.\s|\s\(/)[0];  // "Fuxi-H6 (headset), dongle ..." -> "Fuxi-H6"
   if (n.length > 45) n = `${n.slice(0, 44).trim()}…`;
   return n || 'Unknown device';
 }
