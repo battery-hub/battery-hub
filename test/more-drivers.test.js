@@ -43,3 +43,18 @@ test('Bloody wireless mice answer with report 6 on 0xFF01', () => {
   assert.equal(bloody.parseStatus([0x06, 0x56, 0xff, 0]).offline, true);
   assert.equal(bloody.parseStatus([0x06, 0x57, 81, 0]), null);
 });
+
+test('Darmoshark answers feature report 0x51, Telink mice get a summed retry, AULA receivers answer 20 01', () => {
+  const darmoshark = require('../src/main/hid/drivers/darmoshark');
+  assert.equal(detectDriver({ vendorId: 0x248a, productId: 0xff12, channels: [ch(0x008c, 1), ch(1, 2)] }).id, 'darmoshark');
+  assert.notEqual((detectDriver({ vendorId: 0x248a, productId: 0x5c2e, channels: [ch(0x008c, 1)] }) || {}).id, 'darmoshark');
+  const reply = [0x51, 0x06, 1, 0, 0, 0, 0, 0, 0, 0, 0, 67].concat(new Array(9).fill(0));
+  assert.deepEqual(darmoshark.parseReply(reply), { capacity: 67 });
+  assert.equal(darmoshark.parseReply([0x51, 0x06, 0].concat(new Array(18).fill(0))), null);
+  const akko = require('../src/main/hid/drivers/akko');
+  assert.deepEqual(akko.REQUEST_SUMMED.slice(0, 5), [0x04, 0x20, 0x00, 0x1a, 0x06]);
+  const aula = require('../src/main/hid/drivers/table').DEVICES.find((e) => e.vendorId === 0x0c45 && e.productIds.includes(0xfefe)).steps[0];
+  assert.equal(aula.request.length, 33);
+  assert.equal(aula.request.slice(1, 32).reduce((a, b) => a + b, 0) & 0xff, aula.request[32]);
+  assert.deepEqual(aula.parse([0x20, 0x01, 0x00, 76]), { capacity: 76 });
+});

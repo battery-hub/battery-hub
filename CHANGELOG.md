@@ -8,6 +8,8 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Darmoshark M3 and other Darmoshark mice (issue #162), AULA and EWEADN keyboards on their SONiX 2.4G receiver
+  (issues #109, #160), and Telink mice and Wobkey keyboards on the Akko platform (issues #11, #65, #134, #193).
 - ASUS ROG Gladius III AimPoint and the ROG OMNI receiver (issues #118, #86), MSI VERSA 300 Elite (issue #154), Bloody
   R73 Pro and other Bloody wireless mice (issue #172), Waizowl OGM 8K (issue #169), and the Corsair Void Wireless v2
   on its cable (issue #106).

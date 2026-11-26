@@ -444,6 +444,17 @@ const DEVICES = [
     steps: [bragiStep([0x00], BRAGI_RECEIVER, 0x0f, bragiBattery)],
   },
   {
+    // AULA and EWEADN keyboards on their SONiX 2.4G receiver 0c45:fefe (issues #109, #160 asked on the
+    // cable, which has no battery command), as AulaToolkit and vigil-watt read them (checked on an X87):
+    // output report 0, 20 01 and a last byte that sums the 31 before it; reply 20 01 00 <percent>.
+    name: 'AULA, EWEADN keyboards (SONiX 2.4G receiver)', kind: 'keyboard', vendorId: 0x0c45, productIds: [0xfefe],
+    channel: { usagePage: 0xff60, usage: 0x61 },
+    steps: [{
+      request: [0,32,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,33],
+      parse: (f) => (f.length >= 4 && f[0] === 0x20 && f[1] === 0x01 && f[2] === 0x00 && f[3] >= 1 && f[3] <= 100 ? { capacity: f[3] } : null),
+    }],
+  },
+  {
     // ATK X1 NearLink (issue #129), from ATK's web driver (v3-hub.atkgear.com, the Evision mouse
     // class, isEvisionWireless 0x108b/0x108c): report 5, <request code lo hi> 1a = power info. The
     // reply starts with the same request code; data from byte 7 holds the level, then charging.

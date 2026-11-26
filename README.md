@@ -114,11 +114,13 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | MSI | VERSA 300 Elite Wireless |
 | Bloody | R73 Pro and other Bloody wireless mice |
 | Waizowl | OGM 8K |
+| Darmoshark | M3 and other Darmoshark mice and receivers |
+| AULA, EWEADN | Keyboards on their SONiX 2.4G receiver |
 | 1EA7 2.4G receiver | Generic 2.4G mice on 1ea7:0064 and 0066 |
 | Rapoo | VT7 and VT9 Pro / VT3 MAX mice (24ae:1413, 1417) |
 | YICHIP 2.4G receiver | AJAZZ AJ159 APEX, AJ179 PRO, Lingbao M5 Pro, Attack Shark R2 and other mice and keyboards on YICHIP receivers |
 | BY Tech | PIAO 8K, EWEADN S9 and other BY Tech mice |
-| Akko | Mice on the Akko 8K receiver, and others on the same platform |
+| Akko, Telink, Wobkey | Mice on the Akko 8K receiver, and Telink mice and Wobkey keyboards on the same platform |
 | VGN | Dragonfly 3 MasterGT and other VGN mice |
 | Keychron, SKN | Mice on the Ultra-Link 8K receiver |
 | YJX-chip 2.4G receiver | AJAZZ, XCTECH and other mice on YJX receivers (the same platform as MCHOSE G-series mice) |
