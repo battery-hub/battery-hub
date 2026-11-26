@@ -8,6 +8,9 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Rapoo VT7 and VT9 Pro / VT3 MAX mice (issues #51, #197), mice and keyboards on YICHIP receivers such as the AJAZZ AJ159
+  APEX (issues #110, #147, #156, #205, #231), and BY Tech mice such as the PIAO 8K (issues #201, #140), from open-source
+  drivers for each.
 - ASUS ROG Claymore II keyboard, as G-Helper reads it (issue #212), and 2.4G mice on the 1EA7 receiver (issue #48).
 - Akko 8K receivers (38ee:0024, 000f) and other mice on the same platform, from Akko's own web driver (issues #226, #9).
 - VGN Dragonfly 3 MasterGT and its siblings, and VGN's YJX mice, from VGN's web driver (issue #235).
