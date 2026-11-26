@@ -15,6 +15,8 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- Redragon M901P-KS, M913 and VSG Aquila Fly receivers (25a7:fa07, fa3f) that still failed in 2.0.7: they take the
+  request on one collection and answer on another (0xFF01, report 9), sometimes as a 0-10 level (issues #92, #224).
 - The check said "Couldn't reach GitHub to compare" when GitHub's hourly limit for anonymous requests was used up
   on the network. It now reads the latest version from the releases page instead.
 
