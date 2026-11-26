@@ -365,3 +365,14 @@ test('kysona: a Redragon receiver saying twice it has no mouse means the mouse i
   answers.reads = [[], frame9([9, 3, 0, 0, 0, 1, 0]), frame9([9, 3, 0, 0, 0, 1, 0])];
   await assert.rejects(kysona.readBattery(logical), /^Error: mouse is off$/);
 });
+
+test('kysona: the VSG Aquila Fly receiver reads 0-10, and 100 on the cable is full, not charging (#224)', async () => {
+  assert.deepEqual(kysona.parseFrame(frame9([9, 4, 0, 0, 0, 2, 6, 0]), true), { capacity: 60, charging: false });
+  assert.deepEqual(kysona.parseFrame(frame9([9, 4, 0, 0, 0, 2, 8, 1]), true), { capacity: 80, charging: true });
+  assert.deepEqual(kysona.parseFrame(frame9([9, 4, 0, 0, 0, 2, 10, 1]), true), { capacity: 100, charging: false });
+  assert.deepEqual(kysona.parseFrame(frame9([9, 4, 0, 0, 0, 2, 6, 0])), { capacity: 6, charging: false });
+  const { answers, logical } = redragon();
+  logical.productId = 0xfa3f;
+  answers.reads = [[], frame9([9, 4, 0, 0, 0, 2, 7, 0])];
+  assert.equal((await kysona.readBattery(logical)).capacity, 70);
+});

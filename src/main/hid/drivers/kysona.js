@@ -50,7 +50,9 @@ function matches(logicalDevice) {
 // Report 0x09 is the same answer from receivers that send it on another collection (see readSplit).
 // Redragon's own software reads its level as 0-10 when byte 5 (the data length) is 1 or byte 4 is
 // 0x0A, and bit 7 of the level as charging (OpenMouse-Project/mouse-protocol, Redragon M719 Pro).
-function parseFrame(arr) {
+// Some receivers send 0-10 without either sign: tenths is set for those (TENTHS_RECEIVERS).
+// At 100 the mouse is full: it keeps saying "charging" while on its cable, so that is read as done.
+function parseFrame(arr, tenths = false) {
   if (arr[1] !== 0x04) return null;
   if (arr[0] === 0x08) {
     const capacity = arr[6];
@@ -60,9 +62,9 @@ function parseFrame(arr) {
   }
   if (arr[0] !== 0x09 || arr.length < 8) return null;
   let capacity = arr[6] & 0x7f;
-  if ((arr[5] === 0x01 || arr[4] === 0x0a) && capacity <= 10) capacity *= 10;
+  if ((tenths || arr[5] === 0x01 || arr[4] === 0x0a) && capacity <= 10) capacity *= 10;
   if (!(capacity > 0 && capacity <= 100)) return null;
-  return { capacity, charging: !!arr[7] || !!(arr[6] & 0x80) };
+  return { capacity, charging: capacity < 100 && (!!arr[7] || !!(arr[6] & 0x80)) };
 }
 
 // The receiver's answer to the status request: true while it has the mouse, false when it
@@ -96,7 +98,7 @@ async function readBattery(logicalDevice) {
   const answers = answerChannel(logicalDevice);
   for (const channel of channels) {
     try {
-      return await readFrom(channel, channel === channels[0] ? answers : null);
+      return await readFrom(channel, channel === channels[0] ? answers : null, TENTHS_RECEIVERS.has(logicalDevice.productId));
     } catch (e) {
       if (!/cannot write|could not read/i.test(e.message)) throw e;
       failures.push({ channel, error: e });
@@ -117,8 +119,8 @@ const FEATURE_WAIT_MS = 150;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const sameBytes = (a, b) => a.length >= b.length && b.every((x, i) => a[i] === x);
 
-async function readFrom(channel, answers) {
-  if (answers && split.has(channel.path)) return readSplit(channel, answers);
+async function readFrom(channel, answers, tenths = false) {
+  if (answers && split.has(channel.path)) return readSplit(channel, answers, tenths);
   if (featureOnly.has(channel.path)) return readByFeature(channel);
   try {
     return await readByInput(channel);
@@ -126,7 +128,7 @@ async function readFrom(channel, answers) {
     if (!/could not read/i.test(e.message)) throw e;
     if (answers) {
       try {
-        const reading = await readSplit(channel, answers);
+        const reading = await readSplit(channel, answers, tenths);
         split.add(channel.path);
         return reading;
       } catch (splitError) {
@@ -186,9 +188,13 @@ async function readByFeature(channel) {
 // there. Sources: OpenMouse-Project/mouse-protocol (Redragon M719 Pro 25a7:fa7e, checked on the
 // mouse; Pulsar on 25a7:fa7b/fa7c) and packerlschupfer/pulsar-mouse-linux.
 const split = new Set();
+// Receivers whose report 9 level is 0-10 without saying so: VSG Aquila Fly 25a7:fa3f (issue #224,
+// checked against VSG's own software from 10 to 100%) and 25a7:fa07, the Redragon M913's receiver,
+// which dokutan/mouse_m908 reads as 0-10.
+const TENTHS_RECEIVERS = new Set([0xfa3f, 0xfa07]);
 const answerChannel = (logicalDevice) => logicalDevice.channels.find((c) => c.usagePage === 0xff01) || null;
 
-async function readSplit(channel, answers) {
+async function readSplit(channel, answers, tenths = false) {
   const out = await session.acquire(channel.path);
   const dev = await session.acquire(answers.path);
   await session.readQueued(answers.path, dev);
@@ -203,7 +209,7 @@ async function readSplit(channel, answers) {
       nextPoke = Date.now() + REPOKE_MS;
     }
     const frame = await session.read(answers.path, dev, READ_SLICE_MS);
-    const reading = parseFrame(frame);
+    const reading = parseFrame(frame, tenths);
     if (reading) return reading;
     const status = parseStatus(frame);
     if (status === true) { connected = true; offInARow = 0; }

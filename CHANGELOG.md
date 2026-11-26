@@ -6,6 +6,11 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Fixed
+
+- VSG Aquila Fly and Redragon M913 receivers (25a7:fa3f, fa07) showed a tenth of the level (6% for 60%), and a full
+  mouse on its cable stayed "Charging", so the fully charged alert never came (issue #224).
+
 ## [2.0.8] - 2026-11-26
 
 ### Added
