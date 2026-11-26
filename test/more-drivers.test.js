@@ -34,3 +34,12 @@ test('BY Tech mice answer basic info in feature report 3', () => {
   assert.deepEqual(bytech.parseReply([0x03, 0, 0, 0, 0x02, 0, 0xe4]), { capacity: 100 });
   assert.equal(bytech.parseReply([0x03, 0, 0, 0, 0x0a, 0, 64]), null);
 });
+
+test('Bloody wireless mice answer with report 6 on 0xFF01', () => {
+  const bloody = require('../src/main/hid/drivers/bloody');
+  assert.equal(detectDriver({ vendorId: 0x1956, productId: 0x3031, channels: [ch(0xff02, 1), ch(0xff01, 1), ch(0xff00, 1)] }).id, 'bloody');
+  assert.deepEqual(bloody.parseStatus([0x06, 0x56, 81, 0]), { capacity: 81, charging: false });
+  assert.deepEqual(bloody.parseStatus([0x06, 0x56, 81, 1]), { capacity: 81, charging: true });
+  assert.equal(bloody.parseStatus([0x06, 0x56, 0xff, 0]).offline, true);
+  assert.equal(bloody.parseStatus([0x06, 0x57, 81, 0]), null);
+});

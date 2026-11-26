@@ -102,7 +102,7 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | Razer | 81 wireless mice and keyboards; BlackShark V3 and V3 Pro headsets |
 | SteelSeries | Arctis 1, 7, 7+, 9, Nova 3P, Nova 5, Nova 7, Nova Pro Wireless headsets; Aerox, Prime and Rival 3 Wireless mice |
 | HyperX | Cloud Alpha Wireless, Cloud Flight, Cloud Flight S, Cloud II Wireless, Cloud II Core Wireless, Cloud III Wireless, Cloud III S Wireless, Cloud Stinger 2 Wireless |
-| Corsair | Void, Void Wireless v2, HS80 MAX, Virtuoso, Virtuoso SE, XT and MAX headsets; Slipstream receiver |
+| Corsair | Void, Void Wireless v2 (also on its cable), HS80 MAX, Virtuoso, Virtuoso SE, XT and MAX headsets; Slipstream receiver |
 | Audeze | Maxwell, Maxwell 2 |
 | ELECOM | BlueLED Mouse over Bluetooth (056e:00e5, listed as "Broadcom Bluetooth Wireless Mouse") |
 | Astro | A50 Gen 4, A50 Gen 5 |
@@ -110,7 +110,10 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers; ATK NearLink and BitMouse receivers, X1 NearLink; ATK 8K Nano and 1K/8K dongles |
 | Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X, Atlantis OG and Mini, TACHI, INCA, PARO, THORN and other LAMZU mice |
 | Beken/Xenta 2.4G receiver | Attack Shark and other mice on 1d57:fa60 and fa55 |
-| ASUS | ROG Claymore II keyboard |
+| ASUS | ROG Claymore II keyboard; ROG Gladius III AimPoint and mice on the ROG OMNI receiver |
+| MSI | VERSA 300 Elite Wireless |
+| Bloody | R73 Pro and other Bloody wireless mice |
+| Waizowl | OGM 8K |
 | 1EA7 2.4G receiver | Generic 2.4G mice on 1ea7:0064 and 0066 |
 | Rapoo | VT7 and VT9 Pro / VT3 MAX mice (24ae:1413, 1417) |
 | YICHIP 2.4G receiver | AJAZZ AJ159 APEX, AJ179 PRO, Lingbao M5 Pro, Attack Shark R2 and other mice and keyboards on YICHIP receivers |

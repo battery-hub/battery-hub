@@ -8,6 +8,9 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- ASUS ROG Gladius III AimPoint and the ROG OMNI receiver (issues #118, #86), MSI VERSA 300 Elite (issue #154), Bloody
+  R73 Pro and other Bloody wireless mice (issue #172), Waizowl OGM 8K (issue #169), and the Corsair Void Wireless v2
+  on its cable (issue #106).
 - Rapoo VT7 and VT9 Pro / VT3 MAX mice (issues #51, #197), mice and keyboards on YICHIP receivers such as the AJAZZ AJ159
   APEX (issues #110, #147, #156, #205, #231), and BY Tech mice such as the PIAO 8K (issues #201, #140), from open-source
   drivers for each.

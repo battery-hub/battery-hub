@@ -13,6 +13,17 @@ const OFFLINE = { offline: true };
 const STATUS_REQUEST = [0x00, 0xb0];
 const clampPercent = (v) => Math.min(100, Math.max(0, v));
 
+// ASUS ROG mice, as G-Helper reads them (AsusMouse.cs): 12 07 asks for the battery. The reply is
+// 12 07 .. .. <level> .. .. .. .. <charging>, one byte later behind a report id; FF AA = asleep.
+function asusMouse(f) {
+  const o = f[0] === 0x03 && f[1] === 0x12 ? 1 : 0;
+  if (f.length < 10 + o || f[o] !== 0x12 || f[o + 1] !== 0x07) return null;
+  if (f[o + 4] === 0xff && f[o + 5] === 0xaa) return OFFLINE;
+  const charging = f[o + 9] === 1;
+  if (f[o + 4] > 100 || (f[o + 4] === 0 && !charging)) return OFFLINE;
+  return { capacity: f[o + 4], charging };
+}
+
 // ---- SteelSeries Arctis ----
 const STEELSERIES = 0x1038;
 const NOVA_CHANNEL = { usagePage: 0xffc0, usage: 0x01, interface: 3 };
@@ -384,6 +395,53 @@ const DEVICES = [
         return level >= 1 && level <= 100 ? { capacity: level } : null;
       },
     }],
+  },
+  {
+    // ASUS ROG mice (see asusMouse): the Gladius III AimPoint (issue #118) takes 12 07 unnumbered,
+    // the ROG OMNI receiver (issue #86) as report 3.
+    name: 'ASUS ROG Gladius III AimPoint', kind: 'mouse', vendorId: 0x0b05, productIds: [0x1a72],
+    channel: { usagePage: 0xff01 },
+    steps: [{ request: pad([0x00, 0x12, 0x07], 65), parse: asusMouse }],
+  },
+  {
+    name: 'ASUS ROG OMNI receiver', kind: 'mouse', vendorId: 0x0b05, productIds: [0x1ace],
+    channel: { usagePage: 0xff01 },
+    steps: [{ request: pad([0x03, 0x12, 0x07], 64), parse: asusMouse }],
+  },
+  {
+    // MSI VERSA 300 Elite Wireless (issue #154): the battery query MSI's GM31 answers (0F 20) on
+    // 0xFF0D/0x00B0. Reply 0F 20 ..., byte 14: bit 7 charging, the rest the percent. MSI Center's
+    // 41 80 is never sent.
+    name: 'MSI VERSA 300 Elite Wireless', kind: 'mouse', vendorId: 0x0db0, productIds: [0x9e22],
+    channel: { usagePage: 0xff0d, usage: 0xb0 },
+    steps: [{
+      request: pad([0x00, 0x0f, 0x20], 65),
+      parse: (f) => (f.length < 15 || f[0] !== 0x0f || f[1] !== 0x20 || (f[14] & 0x7f) === 0 ? null
+        : { capacity: clampPercent(f[14] & 0x7f), charging: !!(f[14] & 0x80) }),
+    }],
+  },
+  {
+    // Waizowl OGM 8K receiver (issue #169): the Nordic framing of Darmoshark's N5, whose frames all sum
+    // to 0xA1; the frame the scan caught, 1f 00 81 01, does too. 41 00 81 01 asks for the base info;
+    // the level is at byte 6, or at 11 when bytes 6-7 are 15 19.
+    name: 'Waizowl OGM 8K', kind: 'mouse', vendorId: 0x1915, productIds: [0x0728],
+    channel: { usagePage: 0xff0a, usage: 0x01 },
+    steps: [{
+      request: [0,65,0,129,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,222],
+      parse(f) {
+        if (f.length < 64 || (f[0] & 0x3f) !== 0x01 || f[3] !== 0x01) return null;
+        if ((f.slice(0, 64).reduce((a, b) => a + b, 0) & 0xff) !== 0xa1) return null;
+        const level = f[6] === 0x15 && f[7] === 0x19 ? f[11] : f[6];
+        return level >= 1 && level <= 100 ? { capacity: level } : null;
+      },
+    }],
+  },
+  {
+    // Corsair Void Wireless v2 on its cable (1b1c:2a09, issue #106): wired Bragi devices answer as
+    // the receiver target (OpenLinkHub, hs80rgbWU).
+    name: 'Corsair Void Wireless v2 (cable)', kind: 'headset', vendorId: 0x1b1c, productIds: [0x2a09],
+    channel: { usagePage: 0xff42 },
+    steps: [bragiStep([0x00], BRAGI_RECEIVER, 0x0f, bragiBattery)],
   },
   {
     // ATK X1 NearLink (issue #129), from ATK's web driver (v3-hub.atkgear.com, the Evision mouse

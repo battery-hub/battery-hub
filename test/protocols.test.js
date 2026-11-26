@@ -844,3 +844,25 @@ test('ROG Claymore II asks 12 01 and the 1EA7 receiver answers at register 0x94 
   assert.equal(mouse.parse([0xb5, 0x05, 0x93, 0x04, 0, 0, 63, 0]), null);
   assert.deepEqual(mouse.parse([0xb5, 0x67, 1, 2, 3, 4, 1, 88]), { capacity: 88 });
 });
+
+test('ASUS ROG mice, MSI VERSA 300, Waizowl OGM 8K and the Void v2 on its cable', () => {
+  const gladius = entry(0x0b05, 0x1a72).steps[0];
+  assert.deepEqual(gladius.request.slice(0, 3), [0x00, 0x12, 0x07]);
+  assert.deepEqual(gladius.parse(frame([0x12, 0x07, 0, 0, 66, 0, 0, 0, 0, 1])), { capacity: 66, charging: true });
+  assert.equal(gladius.parse(frame([0x12, 0x07, 0, 0, 0xff, 0xaa, 0, 0, 0, 0])).offline, true);
+  const omni = entry(0x0b05, 0x1ace).steps[0];
+  assert.deepEqual(omni.request.slice(0, 3), [0x03, 0x12, 0x07]);
+  assert.deepEqual(omni.parse(frame([0x03, 0x12, 0x07, 0, 0, 40, 0, 0, 0, 0, 0])), { capacity: 40, charging: false });
+  const versa = entry(0x0db0, 0x9e22).steps[0];
+  const v = new Array(16).fill(0); v[0] = 0x0f; v[1] = 0x20; v[14] = 0x80 | 58;
+  assert.deepEqual(versa.parse(v), { capacity: 58, charging: true });
+  const ogm = entry(0x1915, 0x0728).steps[0];
+  assert.equal(ogm.request.length, 65);
+  assert.equal(ogm.request.slice(1).reduce((a, b) => a + b, 0) & 0xff, 0xa1);
+  const reply = new Array(64).fill(0); reply[0] = 0x01; reply[2] = 0x8c; reply[3] = 0x01; reply[6] = 72;
+  reply[63] = (0xa1 - reply.slice(0, 63).reduce((a, b) => a + b, 0)) & 0xff;
+  assert.deepEqual(ogm.parse(reply), { capacity: 72 });
+  reply[63] = (reply[63] + 1) & 0xff;
+  assert.equal(ogm.parse(reply), null);
+  assert.equal(entry(0x1b1c, 0x2a09).steps.length, 1);
+});
