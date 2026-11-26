@@ -20,7 +20,7 @@ function identityOf(device) {
   return address(serial);
 }
 
-const isWindowsRoute = (id) => /^(bt|xinput):/.test(id);
+const isWindowsRoute = (id) => /^(bt|ble|xinput):/.test(id);
 
 // Ways to read a card, best first: a direct read beats what Windows last remembered.
 function routesOf(card) {

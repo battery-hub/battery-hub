@@ -8,6 +8,8 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Bluetooth LE mice and keyboards whose battery Windows doesn't show are read from their standard Battery Service,
+  every 5 minutes (issues #237, #240, #218). Read-only, and only for paired devices.
 - Darmoshark M3 and other Darmoshark mice (issue #162), AULA and EWEADN keyboards on their SONiX 2.4G receiver
   (issues #109, #160), and Telink mice and Wobkey keyboards on the Akko platform (issues #11, #65, #134, #193).
 - ASUS ROG Gladius III AimPoint and the ROG OMNI receiver (issues #118, #86), MSI VERSA 300 Elite (issue #154), Bloody

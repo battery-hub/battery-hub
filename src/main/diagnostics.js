@@ -148,7 +148,7 @@ function vendorProduct(id) {
 }
 
 // Windows shows Bluetooth devices under the name the user gave them.
-const reportName = (device) => (String(device.id).startsWith('bt:') ? 'Bluetooth device' : device.product || 'Unknown');
+const reportName = (device) => (/^(bt|ble):/.test(String(device.id)) ? 'Bluetooth device' : device.product || 'Unknown');
 
 const ASLEEP = /^(not connected|waiting\b)|\bis off$/i;
 const TURNED_OFF_IN_SETTINGS = /in Settings$/;
@@ -289,7 +289,7 @@ function requestUrl(report, limit = URL_LIMIT) {
 
 function deviceFacts(request, live) {
   const channels = live ? live.channels : [];
-  const bluetooth = String(request.id).startsWith('bt:') || channels.some((c) => BLUETOOTH_PATH.test(c.path || ''));
+  const bluetooth = /^(bt|ble):/.test(String(request.id)) || channels.some((c) => BLUETOOTH_PATH.test(c.path || ''));
   return {
     product: reportName(request),
     manufacturer: request.manufacturer || '',
