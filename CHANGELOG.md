@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+## [2.0.8] - 2026-11-26
+
 ### Added
 
 - Bluetooth LE mice and keyboards whose battery Windows doesn't show are read from their standard Battery Service,
@@ -428,7 +430,8 @@ First stable release, consolidating the 1.0.x and 1.1.x series.
 Initial public release: live battery monitoring for wireless HID devices, per-device tray
 icons, low-battery notifications, history sparklines and the guided calibration wizard.
 
-[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.7...HEAD
+[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.8...HEAD
+[2.0.8]: https://github.com/battery-hub/battery-hub/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/battery-hub/battery-hub/compare/v2.0.5...v2.0.6
 [2.0.5]: https://github.com/battery-hub/battery-hub/compare/v2.0.4...v2.0.5
