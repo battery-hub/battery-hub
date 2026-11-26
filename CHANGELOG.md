@@ -8,6 +8,7 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Nintendo Switch Pro Controllers, their clones and Joy-Cons over Bluetooth, in five steps (issue #232).
 - ELECOM BlueLED Mouse over Bluetooth (056e:00e5). It doesn't give Windows its battery and never sends it on its own,
   so a scan found nothing; it now gets its HID Battery Strength report by asking for it (pull request #239 by @rurute).
 - Several devices on one Logitech Lightspeed receiver (046d:c547) each get their own card; before, only the first one
