@@ -8,6 +8,8 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- MCHOSE V9 Pro 2 headset (3837:6011), with the protocol from MCHOSE's own M HUB (issue #229), and the A7 V2 Pro
+  mouse's receiver 3837:100a (issue #234).
 - Nintendo Switch Pro Controllers, their clones and Joy-Cons over Bluetooth, in five steps (issue #232).
 - ELECOM BlueLED Mouse over Bluetooth (056e:00e5). It doesn't give Windows its battery and never sends it on its own,
   so a scan found nothing; it now gets its HID Battery Strength report by asking for it (pull request #239 by @rurute).
@@ -16,6 +18,7 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- MCHOSE X9: a reading while it charges or is full, and "asleep" when it sleeps; only a headset on battery was read.
 - Redragon M901P-KS, M913 and VSG Aquila Fly receivers (25a7:fa07, fa3f) that still failed in 2.0.7: they take the
   request on one collection and answer on another (0xFF01, report 9), sometimes as a 0-10 level (issues #92, #224).
 - The check said "Couldn't reach GitHub to compare" when GitHub's hourly limit for anonymous requests was used up

@@ -786,3 +786,26 @@ test('Razer BlackShark V3 asks class 0x21 with the XOR byte and reads byte 13', 
   const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
   assert.equal(detectDriver({ vendorId: 0x1532, productId: 0x0577, channels: [ch(0x0c, 1), ch(0xff13, 1), ch(0x0b, 5), ch(0xff14, 1)] }).id, 'tabled');
 });
+
+test('MCHOSE V9 Pro 2 speaks the MC protocol, and the X9 reads charging, full and asleep', () => {
+  const v9p2 = entry(0x3837, 0x6011);
+  assert.deepEqual(v9p2.channel, { usagePage: 0xff07, usage: 0x0222 });
+  const step = v9p2.steps[0];
+  assert.deepEqual(step.request.slice(0, 9), [0x55, 0xaa, 0x01, 0x00, 0x01, 0x00, 0x01, 0x0b, 0x00]);
+  assert.equal(step.request.length, 64);
+  assert.deepEqual(step.parse(frame([0x55, 0xaa, 0x01, 0x00, 0x03, 0x00, 0x01, 0x0b, 0x01, 80])), { capacity: 80, charging: false });
+  assert.deepEqual(step.parse(frame([0x55, 0xaa, 0x01, 0x00, 0x03, 0x00, 0x04, 0x22, 0x01, 0x80 | 45])), { capacity: 45, charging: true });
+  assert.equal(step.parse(frame([0x55, 0xaa, 0x01, 0x00, 0x03, 0x00, 0x01, 0x0b, 0x00, 0])).offline, true);
+  assert.equal(step.parse(frame([0x55, 0xaa, 0x01, 0x00, 0x03, 0x00, 0x01, 0x0c, 0x01, 50])), null);
+  const x9 = entry(0x3837, 0x6045).steps[0];
+  assert.deepEqual(x9.parse(frame([0x55, 0x65, 0x32, 0x03])), { capacity: 50, charging: true });
+  assert.deepEqual(x9.parse(frame([0x55, 0x65, 0x64, 0x04])), { capacity: 100, charging: false });
+  assert.equal(x9.parse(frame([0x55, 0x65, 0x32, 26])).offline, true);
+  assert.equal(x9.parse(frame([0x55, 0x65, 0x32, 0x05])), null);
+});
+
+test('the MCHOSE A7 V2 Pro receiver (3837:100a) is read like the A7 V2 Ultra', () => {
+  const ch = (usagePage, usage) => ({ usagePage, usage, path: `${usagePage}:${usage}` });
+  const device = { vendorId: 0x3837, productId: 0x100a, channels: [ch(1, 2), ch(1, 6), ch(0xff0b, 0x104), ch(0xff01, 1), ch(0x0c, 1)] };
+  assert.equal(detectDriver(device).id, 'mchose-mouse');
+});

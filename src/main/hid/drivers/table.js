@@ -289,7 +289,32 @@ const DEVICES = [
     channel: { usagePage: 0xff90, usage: 0x01 },
     steps: [{
       request: pad([0x55, 0x65, 0x01], 64),
-      parse: (f) => (f.length >= 4 && f[0] === 0x55 && f[1] === 0x65 && f[3] === 0x02 ? { capacity: clampPercent(f[2]) } : null),
+      // Status, as MCHOSE's M HUB reads it: 2 on battery, 3 charging, 4 full, 26 asleep.
+      parse(f) {
+        if (f.length < 4 || f[0] !== 0x55 || f[1] !== 0x65) return null;
+        if (f[3] === 26) return OFFLINE;
+        if (f[3] < 2 || f[3] > 4) return null;
+        return { capacity: clampPercent(f[2]), charging: f[3] === 3 };
+      },
+    }],
+  },
+  {
+    // MCHOSE's "MC" headset protocol, as its M HUB web driver (buildMCFrame, createReadBatteryCommand)
+    // and fuyue521/Wireless-Device-Battery-Monitor-CN (tested on a V9 Pro 2) send it (issue #229):
+    //   55 AA 01 00 01 00 01 0B         read battery: start, version, flags, length, type 00 01, 0x0B
+    //   55 AA 01 .. .. 00 01 0B <on> <level>   <on> 0 = asleep; level bit 7 = charging
+    name: 'MCHOSE V9 Pro 2', kind: 'headset', vendorId: 0x3837, productIds: [0x6011],
+    channel: { usagePage: 0xff07, usage: 0x0222 },
+    steps: [{
+      request: pad([0x55, 0xaa, 0x01, 0x00, 0x01, 0x00, 0x01, 0x0b, 0x00], 64),
+      parse(f) {
+        if (f.length < 10 || f[0] !== 0x55 || f[1] !== 0xaa || f[5] !== 0x00) return null;
+        const reply = f[6] === 0x01 && f[7] === 0x0b;
+        const pushed = f[6] === 0x04 && f[7] === 0x22;
+        if (!reply && !pushed) return null;
+        if (f[8] === 0) return OFFLINE;
+        return { capacity: clampPercent(f[9] & 0x7f), charging: !!(f[9] & 0x80) };
+      },
     }],
   },
   {
