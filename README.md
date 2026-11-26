@@ -110,6 +110,8 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers; ATK NearLink and BitMouse receivers, X1 NearLink; ATK 8K Nano and 1K/8K dongles |
 | Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X, Atlantis OG and Mini, TACHI, INCA, PARO, THORN and other LAMZU mice |
 | Beken/Xenta 2.4G receiver | Attack Shark and other mice on 1d57:fa60 and fa55 |
+| ASUS | ROG Claymore II keyboard |
+| 1EA7 2.4G receiver | Generic 2.4G mice on 1ea7:0064 and 0066 |
 | Akko | Mice on the Akko 8K receiver, and others on the same platform |
 | VGN | Dragonfly 3 MasterGT and other VGN mice |
 | Keychron, SKN | Mice on the Ultra-Link 8K receiver |

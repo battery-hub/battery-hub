@@ -831,3 +831,16 @@ test('VGN Dragonfly 3 uses the VXE protocol, VGN YJX mice use YJX, and LAMZU 0x3
   assert.equal(detectDriver({ vendorId: 0x391d, productId: 0x1a01, channels: [ch(0xff01, 0x10)] }).id, 'yjx');
   assert.equal(detectDriver({ vendorId: 0x37b0, productId: 0x0001, channels: [ch(0xffa0, 1), ch(0xffff, 1)] }).id, 'sinowealth');
 });
+
+test('ROG Claymore II asks 12 01 and the 1EA7 receiver answers at register 0x94 or in its heartbeat', () => {
+  const rog = entry(0x0b05, 0x196b).steps[0];
+  assert.deepEqual(rog.request.slice(0, 3), [0x00, 0x12, 0x01]);
+  assert.deepEqual(rog.parse(frame([0x12, 0x01, 0, 0, 0, 0x4d, 0, 0, 1])), { capacity: 77, charging: true });
+  assert.equal(rog.parse(frame([0x12, 0x01, 0, 0, 0, 0xff, 0xaa, 0, 0])).offline, true);
+  assert.equal(rog.parse(frame([0x12, 0x02, 0, 0, 0, 50, 0, 0, 0])), null);
+  const mouse = entry(0x1ea7, 0x0064).steps[0];
+  assert.deepEqual(mouse.request, [0xb5, 0x05, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual(mouse.parse([0xb5, 0x05, 0x94, 0x04, 0, 0, 63, 0]), { capacity: 63 });
+  assert.equal(mouse.parse([0xb5, 0x05, 0x93, 0x04, 0, 0, 63, 0]), null);
+  assert.deepEqual(mouse.parse([0xb5, 0x67, 1, 2, 3, 4, 1, 88]), { capacity: 88 });
+});

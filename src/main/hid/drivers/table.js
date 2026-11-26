@@ -353,6 +353,39 @@ const DEVICES = [
     }],
   },
   {
+    // ASUS ROG Claymore II (issue #212), as G-Helper reads it (seerge/g-helper, ClaymoreII.cs; an owner's
+    // log in its issue #5482): unnumbered output 12 01 on interface 1 (0xFF00/0x0001). The reply,
+    // without the report id, is 12 01 .. .. .. <percent> .. .. <charging>; FF AA means asleep.
+    // Only 12 01 is sent: G-Helper's other commands on this keyboard change its settings.
+    name: 'ASUS ROG Claymore II', kind: 'keyboard', vendorId: 0x0b05, productIds: [0x196b],
+    channel: { usagePage: 0xff00, usage: 0x01 },
+    steps: [{
+      request: pad([0x00, 0x12, 0x01], 65),
+      parse(f) {
+        if (f.length < 9 || f[0] !== 0x12 || f[1] !== 0x01) return null;
+        if (f[5] === 0xff && f[6] === 0xaa) return OFFLINE;
+        if (f[5] < 1 || f[5] > 100) return null;
+        return { capacity: f[5], charging: f[8] === 1 };
+      },
+    }],
+  },
+  {
+    // 2.4G mice on the 1EA7 receiver (issue #48), as TaskbarVitals reads them (raigor.cpp, checked on
+    // a 1ea7:0066 dongle; 0064 is in its list): report B5 on 0xFFB5/0x0001, 8 bytes. B5 05 makes the
+    // dongle send its registers as B5 05 <address> 04 ..; the one at address 0x94 has the percent in
+    // byte 6. The heartbeat it sends on its own, B5 67 .. .. .. .. <state> <percent>, has it too.
+    name: '2.4G mouse (1EA7 receiver)', kind: 'mouse', vendorId: 0x1ea7, productIds: [0x0064, 0x0066],
+    channel: { usagePage: 0xffb5, usage: 0x01 },
+    steps: [{
+      request: [0xb5, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+      parse(f) {
+        if (f.length < 8 || f[0] !== 0xb5) return null;
+        const level = f[1] === 0x05 && f[2] === 0x94 ? f[6] : f[1] === 0x67 ? f[7] : null;
+        return level >= 1 && level <= 100 ? { capacity: level } : null;
+      },
+    }],
+  },
+  {
     // ATK X1 NearLink (issue #129), from ATK's web driver (v3-hub.atkgear.com, the Evision mouse
     // class, isEvisionWireless 0x108b/0x108c): report 5, <request code lo hi> 1a = power info. The
     // reply starts with the same request code; data from byte 7 holds the level, then charging.

@@ -8,6 +8,7 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- ASUS ROG Claymore II keyboard, as G-Helper reads it (issue #212), and 2.4G mice on the 1EA7 receiver (issue #48).
 - Akko 8K receivers (38ee:0024, 000f) and other mice on the same platform, from Akko's own web driver (issues #226, #9).
 - VGN Dragonfly 3 MasterGT and its siblings, and VGN's YJX mice, from VGN's web driver (issue #235).
 - More LAMZU mice: TACHI, INCA, Maya, PARO, THORN, Atlantis OG and Mini, under LAMZU's second vendor id 0x37B0.
