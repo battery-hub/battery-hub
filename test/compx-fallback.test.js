@@ -34,6 +34,13 @@ test('compx: a fa09 receiver that never answers the keyboard session is read as 
   assert.equal(reading.capacity, 58);
   assert.ok(dev.sent.some((b) => b[0] === 0x13), 'the keyboard session was tried first');
   assert.ok(dev.sent.some((b) => b[0] === 0x08 && b[1] === 0x04), 'then the mouse battery frame');
+
+  // Once known to carry a mouse, the receiver is read as one straight away, without the keyboard session.
+  dev.sent = [];
+  const started = Date.now();
+  assert.equal((await compx.readBattery(receiver)).capacity, 58);
+  assert.ok(!dev.sent.some((b) => b[0] === 0x13), 'no keyboard session the second time');
+  assert.ok(Date.now() - started < 1500);
 });
 
 test('compx: MCHOSE K87 and G98 Pro receivers are claimed, kysona leaves table devices alone', () => {

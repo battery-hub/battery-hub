@@ -113,11 +113,15 @@ const bragiBattery = (value) => (value >= 1 && value <= 1000 ? { capacity: clamp
 // on hardware: 01 02 00 e8 03 = 100 % on a K65 PLUS dongle, 01 02 00 26 02 = 55 % on a Dark Core RGB
 // Pro SE. Error 5 = nothing behind the receiver. It differs from the headset framing (bragiStep), whose
 // replies these devices' captures don't fit, so the headset framing stays only as a fallback.
+// The answer comes from 00 for target 0x08 (the device itself) and from 01 for target 0x09 (the device
+// behind the receiver), as HaloBattery checks it; a receiver's own answer to iCUE on this channel is
+// not taken for the mouse.
 function olhStep(target, property, parse) {
+  const source = target - 0x08;
   return {
     request: pad([0x00, target, BRAGI_GET, property], 65),
     parse(f) {
-      if (f.length < 5 || (f[0] !== 0x00 && f[0] !== 0x01) || f[1] !== BRAGI_GET) return null;
+      if (f.length < 5 || f[0] !== source || f[1] !== BRAGI_GET) return null;
       if (f[2] === 0x05) return OFFLINE;
       return f[2] === 0x00 ? parse(f[3] | (f[4] << 8)) : null;
     },
@@ -221,12 +225,18 @@ function blackSharkV3x(command, parse) {
 }
 
 // Armoury Crate's steps for the Strix Go (HaloBattery asus.py), about 160 mV lower while charging.
+// Millivolts outside what a Li-ion cell can read are a stray frame (HaloBattery's 2500-4500 check).
+const MV_MIN = 2500;
+const MV_MAX = 4500;
+
 function strixGo(f) {
   if (f.length < 13 || f[0] !== 0xff) return null;
   if (f[1] === 0x00) return OFFLINE;
   if (f[1] !== 0x1b) return null;
   const charging = f[9] === 0x0a;
-  const mv = (f[11] | (f[12] << 8)) - (charging ? 160 : 0);
+  const raw = f[11] | (f[12] << 8);
+  if (raw < MV_MIN || raw > MV_MAX) return raw === 0 ? OFFLINE : null;
+  const mv = raw - (charging ? 160 : 0);
   const capacity = mv >= 4100 ? 100 : mv >= 3800 ? 75 : mv >= 3700 ? 50 : mv >= 3500 ? 25 : 10;
   return { capacity, charging, voltageMv: mv };
 }
@@ -346,7 +356,8 @@ function pulsarFusion2(register, parse) {
   request[63] = sum & 0xff; request[64] = sum >> 8;
   return {
     via: 'feature', request, reportId: 0x00, length: 65, wait: 20, tries: 50,
-    parse: (f) => (f.length < 8 || f[1] !== 0x01 || f[2] !== 0x08 || f[3] !== register ? null : parse(f[7])),
+    // Status 05 with the request echoed is the dongle with no mouse (pulsar-mouse-linux _transact).
+    parse: (f) => (f.length < 8 || f[2] !== 0x08 || f[3] !== register ? null : f[1] === 0x05 ? OFFLINE : f[1] !== 0x01 ? null : parse(f[7])),
   };
 }
 
@@ -515,7 +526,7 @@ const DEVICES = [
   {
     // The K65 PLUS Wireless dongle (HaloBattery #154, on hardware: 01 02 00 e8 03 = 100 %).
     name: 'Corsair K65 PLUS Wireless (dongle)', kind: 'keyboard', vendorId: 0x1b1c, productIds: [0x2b07],
-    channel: { usagePage: 0xff42 },
+    channel: { usagePage: 0xff42, usage: 0x01 }, // the 0x0002 notice channel is never written
     steps: [olhStep(BRAGI_HEADSET, 0x0f, bragiBattery)],
   },
   {
@@ -523,17 +534,25 @@ const DEVICES = [
     // packages (m75WU and others). 1bb5 (M65 RGB Ultra Wireless) is checked on hardware by
     // HaloBattery #411; the others are the same packages in OpenLinkHub and ckb-next.
     name: 'Corsair wireless mice (cable)', kind: 'mouse', wired: true, vendorId: 0x1b1c,
-    productIds: [0x1bb5, 0x1bd6, 0x1b80, 0x1b7e, 0x1b4c, 0x1b5e, 0x1bb8, 0x1bdb, 0x2b22, 0x1bf1, 0x2b08, 0x1bf2, 0x1bb2, 0x2b32, 0x2b2e, 0x2b1c, 0x1b98],
-    channel: { usagePage: 0xff42 },
+    productIds: [0x1bb5, 0x1bd6, 0x1b80, 0x1b7e, 0x1b4c, 0x1b5e, 0x1bb8, 0x1bdb, 0x2b22, 0x1bf1, 0x2b08, 0x1bf2, 0x1bb2, 0x2b32, 0x2b2e, 0x1b98],
+    channel: { usagePage: 0xff42, usage: 0x01 },
     steps: [olhStep(BRAGI_RECEIVER, 0x0f, bragiBattery)],
     fallbackSteps: [bragiStep([0x00], BRAGI_RECEIVER, 0x0f, bragiBattery)],
   },
   {
+    // NIGHTSWORD v2 on its cable: OpenLinkHub nightswordv2WU sends the SABRE v3 PRO cable's Slipstream
+    // V2 frame (512-byte reports there; hidapi pads the 65-byte write). Level in tenths at bytes 5-6.
+    name: 'Corsair NIGHTSWORD v2 (cable)', kind: 'mouse', wired: true, vendorId: 0x1b1c, productIds: [0x2b1c],
+    channel: { usagePage: 0xff42, usage: 0x01 },
+    steps: [{ request: pad([0x00, 0x00, 0x01, 0x01, 0x02, 0x0f], 65), parse: slipstreamV2(0x00) }],
+  },
+  {
     // Corsair wireless keyboards on their cable (OpenLinkHub k70coretklWU, k100airWU, k70pmWU and
-    // the K65 PLUS, MAKR 75 and VANGUARD packages): target 0x08.
+    // the K65 PLUS and MAKR 75 packages): target 0x08. The VANGUARD 96 and 99 AIR speak Slipstream V2
+    // with a reply layout OpenLinkHub doesn't spell out, so they wait for a capture.
     name: 'Corsair wireless keyboards (cable)', kind: 'keyboard', wired: true, vendorId: 0x1b1c,
-    productIds: [0x2b02, 0x2b10, 0x2b11, 0x2b23, 0x1bab, 0x1bb6, 0x2b04, 0x2b0f, 0x2b21],
-    channel: { usagePage: 0xff42 },
+    productIds: [0x2b02, 0x2b10, 0x2b11, 0x2b23, 0x1bab, 0x1bb6, 0x2b04],
+    channel: { usagePage: 0xff42, usage: 0x01 },
     steps: [olhStep(BRAGI_RECEIVER, 0x0f, bragiBattery)],
     fallbackSteps: [bragiStep([0x00], BRAGI_RECEIVER, 0x0f, bragiBattery)],
   },
@@ -541,8 +560,9 @@ const DEVICES = [
     // 0x0a40 is a Virtuoso SE receiver HeadsetControl doesn't list yet (issue #99); its scan shows
     // the same Bragi replies.
     name: 'Corsair Virtuoso SE and XT', kind: 'headset', vendorId: 0x1b1c,
-    // 0a6b: the HS80 RGB Wireless receiver (HaloBattery, from ST1CKEL/HS80_Control); 0a3f: a second
-    // Virtuoso SE id in OpenLinkHub.
+    // 0a6b: the HS80 RGB Wireless receiver (HaloBattery, from ST1CKEL/HS80_Control); 0a3f: the Virtuoso
+    // SE on its USB cable (OpenLinkHub virtuosoSEWU), which, like 0a3d, answers on 0x09
+    // (HeadsetControl corsair_virtuoso_xt resolveTarget).
     productIds: [0x0a3e, 0x0a3d, 0x0a40, 0x0a64, 0x0a6b, 0x0a3f],
     channel: { usagePage: 0xff42, usage: 0x01 },
     steps: [bragiStep([], BRAGI_HEADSET, 0x0f, bragiBattery)],
@@ -940,7 +960,7 @@ const DEVICES = [
     steps: [avneraStep([0xff, 0x07, 0x00, 0xfd, 0x04, 0x0c, 0xf1, 0x02, 0x01], (f) => {
       if (f.length < 13 || f[0] !== 0xff || f[1] !== 0x12 || f[3] !== 0xfe || f[9] === 0x0a) return null;
       const mv = f[11] | (f[12] << 8);
-      if (mv === 0) return OFFLINE;
+      if (mv < MV_MIN || mv > MV_MAX) return mv === 0 ? OFFLINE : null;
       return { capacity: Math.min(100, Math.ceil(fromVoltage(mv, LI_ION) / 25) * 25), charging: f[9] === 0x05, voltageMv: mv };
     }, { wait: 50, tries: 4 })],
   },
@@ -953,7 +973,7 @@ const DEVICES = [
     steps: [avneraStep([0xff, 0x07, 0x00, 0xfd, 0x04, 0x0c, 0xf1, 0x02, 0x01, 0x04, 0xf0, 0x0c], (f) => {
       if (f.length < 13 || f[0] !== 0xff || f[1] !== 0x12 || f[3] !== 0xfe) return null;
       const mv = f[11] | (f[12] << 8);
-      if (mv === 0) return OFFLINE;
+      if (mv < MV_MIN || mv > MV_MAX) return mv === 0 ? OFFLINE : null;
       return { capacity: fromVoltage(mv, CLOUD_FLIGHT_CURVE), charging: f[9] === 0x05, voltageMv: mv };
     }, { wait: 20, tries: 8 })],
   },
@@ -974,20 +994,21 @@ const DEVICES = [
     steps: [{
       request: pad([0x01, 0xb0], 64),
       parse: (f) => (f.length < 16 || f[0] !== 0x01 || f[1] !== 0xb0 ? null
-        : f[15] === 0x01 || f[6] === 0 || f[6] > 100 ? OFFLINE : { capacity: f[6], charging: f[15] === 0x02 }),
+        : f[6] > 100 ? null : f[15] === 0x01 || f[6] === 0 ? OFFLINE : { capacity: f[6], charging: f[15] === 0x02 }),
     }],
   },
   {
     // SteelSeries Arctis GameBuds (HeadsetControl steelseries_arctis_gamebuds.hpp; Arctis-Sound-Manager,
     // confirmed by a USB capture): 00 B0 -> B0 .. .. <left state> <right state> <left %> <right %>,
-    // state 2 docked, 3 out of the case. The card shows the lower bud.
+    // state 2 docked, 3 out of the case. The card shows the lower bud out of the case (HeadsetControl
+    // counts only those); both docked reads as off.
     name: 'SteelSeries Arctis GameBuds', kind: 'headset', vendorId: STEELSERIES, productIds: [0x230a],
     channel: NOVA_CHANNEL,
     steps: [{
       request: STATUS_REQUEST,
       parse(f) {
         if (f.length < 7 || f[0] !== 0xb0) return null;
-        const buds = [[f[3], f[5]], [f[4], f[6]]].filter(([state, level]) => (state === 2 || state === 3) && level >= 1 && level <= 100);
+        const buds = [[f[3], f[5]], [f[4], f[6]]].filter(([state, level]) => state === 3 && level >= 1 && level <= 100);
         return buds.length ? { capacity: Math.min(...buds.map(([, level]) => level)), charging: false } : OFFLINE;
       },
     }],
@@ -1110,12 +1131,13 @@ const DEVICES = [
   {
     // ATK "Waizowl" mice (ATK's web hub, class Qr; vendor driver decoded, not hardware-confirmed): report
     // 2, 0E 81 01 = get control data; byte 5 the level, 6 the state (1 charging, 2 asleep or not linked).
-    // The same layout comes pushed as report 6. ATK Duckbill ELITE 1282, its 8K dongle 1283.
+    // ATK's hub sends and reads it as FEATURE report 2 (class I$ promiseRun: sendFeatureReport, then
+    // receiveFeatureReport); it checks only the command id, byte 3. ATK Duckbill ELITE 1282, 8K dongle 1283.
     name: 'ATK Duckbill ELITE (Waizowl)', kind: 'mouse', vendorId: 0x373b, productIds: [0x1282, 0x1283],
     channel: { usagePage: 0xff02, usage: 0x02 },
     steps: [{
-      request: pad([0x02, 0x0e, 0x81, 0x01], 64),
-      parse: (f) => (f.length < 7 || (f[0] !== 0x02 && f[0] !== 0x06) || f[2] !== 0x81 || f[3] !== 0x01 ? null
+      via: 'feature', request: pad([0x02, 0x0e, 0x81, 0x01], 64), reportId: 0x02, length: 64, wait: 20, tries: 5,
+      parse: (f) => (f.length < 7 || f[0] !== 0x02 || f[3] !== 0x01 ? null
         : f[6] === 2 ? OFFLINE : f[5] < 1 || f[5] > 100 ? null : { capacity: f[5], charging: f[6] === 1 }),
     }],
   },
@@ -1129,7 +1151,7 @@ const DEVICES = [
     steps: [{
       request: pad([0x4d, 0x01, 0x01, 0x00, 0x00, 0x09, 0x00, 0x00, 0x08], 64),
       parse: (f) => (f.length < 21 || f[0] !== 0x4d || f[4] !== 0x00 || f[5] !== 0x09 || f[8] === 0xff ? null
-        : f[20] === 0 ? OFFLINE : f[20] > 100 ? null : { capacity: f[20], charging: f[19] === 1 }),
+        : f[20] === 0 || f[20] > 100 ? null : { capacity: f[20], charging: f[19] === 1 }), // M HUB retries a 0 before calling it off
     }],
   },
   {
@@ -1189,9 +1211,15 @@ const DEVICES = [
   },
   {
     // Rival 650 Wireless (rivalcfg rival650.py): the Rival 3 Wireless's request, on interface 0.
-    name: 'SteelSeries Rival 650 Wireless', kind: 'mouse', vendorId: STEELSERIES, productIds: [0x1726, 0x172b],
+    name: 'SteelSeries Rival 650 Wireless', kind: 'mouse', vendorId: STEELSERIES, productIds: [0x1726],
     channel: { interface: 0 },
     steps: [{ request: [0x00, 0xaa, 0x01], parse: (f) => (f.length < 3 ? null : f[0] === 0 || f[0] > 100 ? OFFLINE : { capacity: f[0], charging: !!f[2] }) }],
+  },
+  {
+    // The Rival 650 on its cable (172b): the same request; a silent read isn't the mouse being off.
+    name: 'SteelSeries Rival 650 Wireless (cable)', kind: 'mouse', wired: true, vendorId: STEELSERIES, productIds: [0x172b],
+    channel: { interface: 0 },
+    steps: [{ request: [0x00, 0xaa, 0x01], parse: (f) => (f.length < 3 || f[0] === 0 || f[0] > 100 ? null : { capacity: f[0], charging: !!f[2] }) }],
   },
   {
     // Rival Pro (rivalcfg PR #294, captured from GG and tested by its author): 92 00 <mouse %> ...
@@ -1298,7 +1326,7 @@ const DEVICES = [
     channel: { usagePage: 0xff00, usage: 0x01 },
     steps: [{
       via: 'feature', request: deluxRequest, reportId: 0x0c, length: 33, wait: 50, tries: 4,
-      parse: (f) => (f.length < 20 || f[0] !== 0x0c || f[18] < 1 || f[18] > 100 ? null : { capacity: f[18], charging: f[19] === 1 }),
+      parse: (f) => (f.length < 20 || f[0] !== 0x0c || f[2] !== 0x20 || f[18] < 1 || f[18] > 100 ? null : { capacity: f[18], charging: f[19] === 1 }),
     }],
   },
   {

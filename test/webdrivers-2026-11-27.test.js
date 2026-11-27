@@ -45,8 +45,11 @@ test('ATK Hechi and Waizowl; kysona leaves the Waizowl receivers alone', () => {
   assert.deepEqual(info.parse(reply), { capacity: 88, charging: true });
   const w = entry(0x373b, 0x1283).steps[0];
   assert.deepEqual(w.request.slice(0, 4), [0x02, 0x0e, 0x81, 0x01]);
+  // ATK's hub sends and reads it as feature report 2, never as an output report.
+  assert.equal(w.via, 'feature');
+  assert.equal(w.reportId, 2);
   assert.deepEqual(w.parse(frame([0x02, 0x0e, 0x81, 0x01, 3, 77, 0])), { capacity: 77, charging: false });
-  assert.deepEqual(w.parse(frame([0x06, 0x0e, 0x81, 0x01, 3, 77, 1])), { capacity: 77, charging: true });
+  assert.deepEqual(w.parse(frame([0x02, 0x0e, 0x00, 0x01, 3, 77, 1])), { capacity: 77, charging: true });
   assert.equal(w.parse(frame([0x02, 0x0e, 0x81, 0x01, 3, 77, 2])).offline, true);
   const layout = [ch(0xff02, 2, 1), ch(0xff04, 2, 1)];
   assert.equal(detectDriver({ vendorId: 0x373b, productId: 0x1283, channels: layout }).id, 'tabled');
@@ -60,7 +63,7 @@ test('MCHOSE 0x4D, VGN ldMs and king, Pulsar Fusion2', () => {
   const mr = frame([0x4d, 0x01, 0x01, 0x10, 0x00, 0x09]); mr[8] = 0x37; mr[19] = 1; mr[20] = 64;
   assert.deepEqual(m.parse(mr), { capacity: 64, charging: true });
   mr[20] = 0;
-  assert.equal(m.parse(mr).offline, true);
+  assert.equal(m.parse(mr), null); // M HUB retries a 0 before calling the mouse off
   assert.equal(mchoseMouse.matches({ vendorId: 0x3837, productId: 0x101d, channels: [ch(0xff01, 1, 1)] }), false);
   assert.deepEqual(entry(0x391d, 0x1a18).steps[0].parse(frame([0xa0, 0x02, 0x25, 91], 33)), { capacity: 91 });
   const king = frame([0x20]); king[8] = 0x08; king[17] = 55;
@@ -76,5 +79,7 @@ test('MCHOSE 0x4D, VGN ldMs and king, Pulsar Fusion2', () => {
   assert.equal(level.parse(ready).offline, true);
   const busy = [...ready]; busy[1] = 0x02;
   assert.equal(level.parse(busy), null);
+  const noMouse = [...ready]; noMouse[1] = 0x05; // status 05, the request echoed: no mouse on the dongle
+  assert.equal(level.parse(noMouse).offline, true);
   assert.equal(detectDriver({ vendorId: 0x3710, productId: 0x5403, channels: [ch(0xff00, 1, 3)] }).id, 'tabled');
 });

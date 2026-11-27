@@ -33,6 +33,20 @@ test('WLmouse and the Attack Shark R5 Ultra: the sinowealth exchange on 0xFFFF a
   assert.equal(sinowealth.matches({ vendorId: 0x373e, productId: 0x0047, channels: [ch(0xffff, 0, 2)] }), true);
   assert.equal(sinowealth.matches({ vendorId: 0x373e, productId: 0x0048, channels: [ch(0xffff, 0, 2)] }), false);
   assert.equal(sinowealth.matches({ vendorId: 0x36a7, productId: 0xa880, channels: [ch(0x01, 2, 0)] }), false);
+  // HaloBattery wlmouse.py: "00 a1 00 02 02 00 83 01 60" = 96 %, charging; WLmouse also answers ready as A2.
+  const reply = (status) => [0x00, status, 0x00, 0x02, 0x02, 0x00, 0x83, 0x01, 0x60];
+  assert.deepEqual(sinowealth.parseReply(reply(0xa1), false, 0x36a7), { capacity: 96, charging: true });
+  assert.deepEqual(sinowealth.parseReply(reply(0xa2), false, 0x36a7), { capacity: 96, charging: true });
+  assert.equal(sinowealth.parseReply(reply(0xa2), false, 0x373e), null); // A2 counts for WLmouse only
+});
+
+test('the Rival 650 on its cable is its own wired entry', () => {
+  const { DEVICES } = require('../src/main/hid/drivers/table');
+  const cable = DEVICES.find((e) => e.vendorId === 0x1038 && e.productIds.includes(0x172b));
+  assert.equal(cable.wired, true);
+  assert.deepEqual(cable.steps[0].parse([60, 0, 1]), { capacity: 60, charging: true });
+  assert.equal(cable.steps[0].parse([0, 0, 0]), null);
+  assert.ok(!DEVICES.find((e) => e.vendorId === 0x1038 && e.productIds.includes(0x1726)).wired);
 });
 
 test('Rapoo VT9 Pro V2 and the VT7 cable', () => {
@@ -93,8 +107,10 @@ test('VAXEE, CROCIRIS, DARKRIM, Ninjutso, Delux and Redragon M690 PRO', () => {
   const delux = entry(0x248a, 0x5b2f).steps[0];
   const a = delux.request(); const b = delux.request();
   assert.notEqual(a[4], b[4]);
-  const dReply = new Array(33).fill(0); dReply[0] = 0x0c; dReply[18] = 70; dReply[19] = 1;
+  const dReply = new Array(33).fill(0); dReply[0] = 0x0c; dReply[2] = 0x20; dReply[18] = 70; dReply[19] = 1;
   assert.deepEqual(delux.parse(dReply), { capacity: 70, charging: true });
+  dReply[2] = 0x21; // fuyue521 PollDeluxM800 checks the 0x20 echo
+  assert.equal(delux.parse(dReply), null);
   const [m690link, m690status] = entry(0x258a, 0x002f).steps;
   assert.equal(m690link.parse([0x05, 0x80, 0x00, 0, 0, 0, 0, 0]).offline, true);
   assert.deepEqual(m690status.parse([0x05, 0x90, 0x11, 58, 0, 0, 0, 0]), { capacity: 58 });

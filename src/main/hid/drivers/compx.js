@@ -80,9 +80,21 @@ function sendControl(channelPath) {
   });
 }
 
+// fa09 receivers that turned out to carry a mouse go straight to the mouse read: the keyboard session
+// before it costs a PowerShell start and up to 13 s, past hid-client's 12 s limit.
+const mouseReceivers = new Set();
+
 async function readBattery(logicalDevice) {
   const channel = channelOf(logicalDevice);
   if (!channel) throw new Error('no command channel');
+  if (mouseReceivers.has(channel.path)) {
+    try {
+      return await require('./kysona').readMouse(logicalDevice);
+    } catch (e) {
+      if (!/ is off$/.test(e.message)) mouseReceivers.delete(channel.path); // ask the keyboard way again next time
+      throw e;
+    }
+  }
   const dev = await session.acquire(channel.path);
   await session.readQueued(channel.path, dev); // a late reply to an old request is stale
 
@@ -120,7 +132,11 @@ async function readBattery(logicalDevice) {
   if (answered) throw new Error('keyboard is not answering');
   // No session answer at all: 3554:fa09 also carries mice (issues #244, #190, #82, #116), which speak
   // the VXE mouse frame instead. Required here, not at the top, as kysona.js requires this file.
-  if (logicalDevice.vendorId === VENDOR) return require('./kysona').readMouse(logicalDevice);
+  if (logicalDevice.vendorId === VENDOR) {
+    const reading = await require('./kysona').readMouse(logicalDevice);
+    mouseReceivers.add(channel.path);
+    return reading;
+  }
   throw writeError || controlError || new Error('timeout waiting for battery response');
 }
 

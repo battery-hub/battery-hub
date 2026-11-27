@@ -51,19 +51,22 @@ function request() {
 }
 
 // A reading, { offline } for a sleeping mouse, or null when the answer isn't ready.
-function parseReply(raw, wired) {
+// WLmouse also answers ready as A2 (HaloBattery wlmouse.py: "a1|a2 00 02 02 00 83"), so that counts
+// for its vendor id only.
+const WLMOUSE = 0x36a7;
+function parseReply(raw, wired, vendorId) {
   if (raw.length < 9 || raw[6] !== 0x83) return null;
   if (raw[1] === 0xa4) return { offline: true };
-  if (raw[1] !== 0xa1) return null;
+  if (raw[1] !== 0xa1 && !(raw[1] === 0xa2 && vendorId === WLMOUSE)) return null;
   return { capacity: Math.min(100, Math.max(1, raw[8])), charging: raw[7] === 1 || (wired && raw[8] < 100) };
 }
 
-async function readFrom(channel, wired) {
+async function readFrom(channel, wired, vendorId) {
   const dev = await session.acquire(channel.path);
   await session.sendFeatureReport(channel.path, dev, request());
   for (let i = 0; i < ANSWER_ATTEMPTS; i++) {
     await sleep(ANSWER_WAIT_MS);
-    const reading = parseReply(await session.getFeatureReport(channel.path, dev, 0x00, LENGTH), wired);
+    const reading = parseReply(await session.getFeatureReport(channel.path, dev, 0x00, LENGTH), wired, vendorId);
     if (reading && reading.offline) throw new Error('mouse is off');
     if (reading) return reading;
   }
@@ -74,7 +77,7 @@ async function readBattery(logicalDevice) {
   let lastError = new Error('no command channel');
   for (const channel of channelsOf(logicalDevice)) {
     try {
-      return await readFrom(channel, isWired(logicalDevice));
+      return await readFrom(channel, isWired(logicalDevice), logicalDevice.vendorId);
     } catch (e) {
       lastError = e;
       if (/is off$/.test(e.message)) break;

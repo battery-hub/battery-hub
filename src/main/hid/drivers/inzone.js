@@ -85,6 +85,8 @@ function matches(logicalDevice) {
 }
 
 async function readHeadset(logicalDevice) {
+  let silent = false; // a collection that took the request but got no answer
+  let refused = null;
   for (const channel of headsetChannels(logicalDevice)) {
     for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
       const tid = nextTid();
@@ -92,14 +94,17 @@ async function readHeadset(logicalDevice) {
       try {
         reading = await exchange.exchange(channel, request(tid), (f) => parseHeadset(f, tid), REPLY_MS);
       } catch (e) {
-        if (TIMEOUT.test(e.message)) continue;
+        if (TIMEOUT.test(e.message)) { silent = true; continue; }
+        refused = e;
         break; // this collection refuses the request: try the other one
       }
       if (reading.off) throw new Error('headset is off');
       return reading;
     }
   }
-  throw new Error('headset is off');
+  // Silence means the headset is off; a request every collection refused is an error to show, not "off".
+  if (silent || !refused) throw new Error('headset is off');
+  throw refused;
 }
 
 // The card shows the lower earbud. With neither earbud reporting, or no reply at all (the case is

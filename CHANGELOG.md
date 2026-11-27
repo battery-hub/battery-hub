@@ -43,7 +43,15 @@ All notable changes to this project are documented here. Versions follow
 ### Fixed
 
 - Mice on the 3554:fa09 Compx receiver that never answer the keyboard session are now read as mice (issues #244,
-  #190, #82, #116).
+  #190, #82, #116), and once a receiver is known to carry a mouse it is read as one straight away, without the slow
+  keyboard session first.
+- Second review of the new devices against their sources: the ATK Duckbill ELITE (Waizowl) is asked with a feature
+  report, as ATK's hub does; the Corsair NIGHTSWORD v2 on its cable speaks the SABRE v3 PRO's newer protocol, and the
+  VANGUARD 96 and 99 AIR wait for a capture; a Corsair answer must come from the device that was asked, on 0xFF42/0x0001
+  only; short feature reports are read with a full-size buffer; impossible millivolt values are skipped instead of
+  showing a false low level; the Arctis GameBuds count only buds out of the case; a Pulsar Fusion2 dongle with no mouse
+  shows as off; WLmouse's other "ready" answer is accepted; the Rival 650 on its cable and an INZONE headset that
+  refuses the request are no longer shown as off.
 - Razer BlackWidow V3 Pro on its cable: asked with the transaction id OpenRazer uses for it (0x3f, not 0xff).
 - MCHOSE V9 PRO: read while charging or full, and "asleep"; only a headset on battery was read (issues #43, #250).
 - Corsair Slipstream receiver (issue #46): asked in OpenLinkHub's framing, which its replies fit, with the old framing

@@ -107,6 +107,11 @@ test('ASUS Strix Go and TUF H3, HyperX Cloud Core: Avnera millivolts to levels',
   assert.equal(tuf.parse(tufReply(0x0a, 3904)), null);
   const core = entry(0x0951, 0x173f).steps[0];
   assert.equal(core.parse(frame([0xff, 0x12, 0x05, 0xfe, 0, 0, 0, 0, 0, 0x05, 0, 0x2c, 0x0f])).charging, true);
+  // A millivolt value no cell can have is a stray frame, not a low battery; 0 is off.
+  assert.equal(core.parse(frame([0xff, 0x12, 0x05, 0xfe, 0, 0, 0, 0, 0, 0x03, 0, 0x10, 0x00])), null);
+  assert.equal(tuf.parse(tufReply(0x03, 0)).offline, true);
+  assert.equal(tuf.parse(tufReply(0x03, 6000)), null);
+  assert.equal(go.parse(goReply(0x03, 900)), null);
 });
 
 test('HyperX Cloud Alpha 2: on/off first, then level and charging', () => {
@@ -122,8 +127,12 @@ test('SteelSeries Nova Pro Omni / Elite and GameBuds', () => {
   assert.deepEqual(omni.parse(reply(31, 0x02)), { capacity: 31, charging: true });
   assert.equal(omni.parse(reply(31, 0x01)).offline, true);
   assert.equal(omni.parse(reply(0, 0x08)).offline, true);
+  assert.equal(omni.parse(reply(140, 0x08)), null); // a protocol error, not the headset being off
   const buds = entry(0x1038, 0x230a).steps[0];
-  assert.deepEqual(buds.parse(frame([0xb0, 0, 0, 0x03, 0x02, 80, 64])), { capacity: 64, charging: false });
+  // Only buds out of the case (3) count, as HeadsetControl reads them; a docked bud (2) is charging.
+  assert.deepEqual(buds.parse(frame([0xb0, 0, 0, 0x03, 0x02, 80, 64])), { capacity: 80, charging: false });
+  assert.deepEqual(buds.parse(frame([0xb0, 0, 0, 0x03, 0x03, 80, 64])), { capacity: 64, charging: false });
+  assert.equal(buds.parse(frame([0xb0, 0, 0, 0x02, 0x02, 80, 64])).offline, true);
   assert.deepEqual(buds.parse(frame([0xb0, 0, 0, 0x03, 0x00, 80, 0])), { capacity: 80, charging: false });
   assert.equal(buds.parse(frame([0xb0, 0, 0, 0x00, 0x00, 0, 0])).offline, true);
 });

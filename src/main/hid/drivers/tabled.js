@@ -40,7 +40,9 @@ async function featureRead(channel, step, request, accept) {
   if (request) await session.sendFeatureReport(channel.path, dev, request);
   for (let i = 0; i < (step.tries || 4); i++) {
     await sleep(step.wait ?? 50);
-    const result = accept(await session.getFeatureReport(channel.path, dev, step.reportId, step.length));
+    // hidapi hands the buffer size to Windows unpadded, and Windows wants at least the collection's
+    // feature report length: a bigger buffer is fine and only the report's own bytes come back.
+    const result = accept(await session.getFeatureReport(channel.path, dev, step.reportId, Math.max(step.length || 0, 65)));
     if (result !== null && result !== undefined) return result;
   }
   throw new Error('timeout waiting for battery response');
