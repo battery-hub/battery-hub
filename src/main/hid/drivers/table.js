@@ -143,10 +143,99 @@ function aeroxBattery(f) {
   return { capacity: level, charging: !!(f[1] & 0x80) };
 }
 
-function razerHeadsetRequest(command) {
-  const r = pad([0x02, 0x00, 0x60, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x80, command], 64);
+// Domain 0x80 asks a receiver for the headset behind it; 0x00 asks a headset on its own cable.
+function razerHeadsetRequest(command, domain = 0x80) {
+  const r = pad([0x02, 0x00, 0x60, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, domain, command], 64);
   r[62] = r.slice(0, 62).reduce((x, b) => x ^ b, 0);
   return r;
+}
+
+// The same Razer frame from the BlackShark V2 HyperSpeed and Kraken V4 (HaloBattery #86 and the
+// Kraken V4 owner; arkady-emelyanov/blackshark-battery dongle.rs; OpenRGB MR 3042). Their replies
+// don't always carry the 02 at byte 1 the V3's do, so it isn't required; a cable may answer as 0x80.
+function razerMediaTek(domain) {
+  return {
+    request: razerHeadsetRequest(0x21, domain),
+    parse: (f) => (f.length < 14 || f[0] !== 0x02 || (f[2] & 0xe0) !== 0x60 || (f[9] !== domain && f[9] !== 0x80)
+      || f[10] !== 0x21 || (f[11] !== 0x01 && f[11] !== 0x02) || f[12] !== 0x01 ? null
+      : f[13] === 0 || f[13] > 100 ? OFFLINE : { capacity: f[13] }),
+  };
+}
+
+// The "Avnera" feature exchange of several headset dongles: a request sent as feature report 0xFF,
+// then feature report 0xFF read back until the answer is there (FF 01 = nothing fresh yet).
+function avneraStep(request, parse, { wait = 50, tries = 5 } = {}) {
+  return { via: 'feature', request: pad(request, 64), reportId: 0xff, length: 64, wait, tries, parse };
+}
+const LI_ION = curve([4150, 4000, 3900, 3800, 3700, 3600, 3500, 3320], [100, 85, 70, 55, 35, 20, 8, 0]);
+
+// Logitech's newer headsets answer a fixed-index battery request on 0xFFA0 (HeadsetControl #581 for
+// the G325, its logitech_gpro_x2_lightspeed legacy request for the PRO X 2).
+const LOGITECH_CENTURION = { usagePage: 0xffa0, usage: 0x01, interface: 3 };
+
+// Jabra's GN protocol: report 5, GET battery (0x46 = GET, 6 bytes) of 0x12 0x02. dst 0x04 is the
+// headset behind a Link dongle, 0x08 a headset on its own USB. HeadsetControl jabra_gnp_protocol.hpp.
+const JABRA_SEQ = 0x5a;
+function jabraStep(dst) {
+  return {
+    request: pad([0x05, dst, 0x00, JABRA_SEQ, 0x46, 0x12, 0x02], 64),
+    parse(f) {
+      if (f.length < 9 || f[0] !== 0x05 || (f[4] >> 6) !== 3 || f[3] !== JABRA_SEQ) return null;
+      if (f[5] === 0xfe) return [0xf3, 0xf4, 0xf5].includes(f[6]) ? OFFLINE : null;
+      return f[8] >= 1 && f[8] <= 100 ? { capacity: f[8], charging: !!(f[7] & 0x01) } : null;
+    },
+  };
+}
+
+// MCHOSE's 55 65 status, as its M HUB reads it: 2 on battery, 3 charging, 4 full, 26 asleep. A 55 0A
+// frame is the dongle saying the headset is off (HeadsetControl fifine_ht6, the same protocol).
+function mchoseStatus(f) {
+  if (f.length < 4 || f[0] !== 0x55) return null;
+  if (f[1] === 0x0a) return OFFLINE;
+  if (f[1] !== 0x65) return null;
+  if (f[3] === 26) return OFFLINE;
+  if (f[3] < 2 || f[3] > 4) return null;
+  return { capacity: clampPercent(f[2]), charging: f[3] === 3 };
+}
+
+// Slipstream V2 reply: <endpoint> .. 01 02 <status> <lo> <hi>, tenths of a percent.
+function slipstreamV2(endpoint) {
+  return (f) => {
+    if (f.length < 7 || f[0] !== endpoint || f[2] !== 0x01 || f[3] !== 0x02) return null;
+    if (f[4] !== 0x00) return OFFLINE;
+    return bragiBattery(f[5] | (f[6] << 8));
+  };
+}
+
+function blackSharkV3x(command, parse) {
+  const request = pad([0x07, 0x00, 0x03, 0x00, 0x00, 0x00, 0x02, 0x07, command], 64);
+  request[62] = request.slice(3, 61).reduce((x, b) => x ^ b, 0);
+  return {
+    via: 'feature', request, reportId: 0x07, length: 64, wait: 50, tries: 4,
+    parse(f) {
+      if (f.length < 63 || f[0] !== 0x07 || f[1] !== 0x02 || f[2] !== 0x03 || f[7] !== 0x07 || f[8] !== command) return null;
+      if (f[62] !== f.slice(3, 61).reduce((x, b) => x ^ b, 0)) return null;
+      return parse(f[10]);
+    },
+  };
+}
+
+// Armoury Crate's steps for the Strix Go (HaloBattery asus.py), about 160 mV lower while charging.
+function strixGo(f) {
+  if (f.length < 13 || f[0] !== 0xff) return null;
+  if (f[1] === 0x00) return OFFLINE;
+  if (f[1] !== 0x1b) return null;
+  const charging = f[9] === 0x0a;
+  const mv = (f[11] | (f[12] << 8)) - (charging ? 160 : 0);
+  const capacity = mv >= 4100 ? 100 : mv >= 3800 ? 75 : mv >= 3700 ? 50 : mv >= 3500 ? 25 : 10;
+  return { capacity, charging, voltageMv: mv };
+}
+
+function hyperxAlpha2Steps() {
+  return [
+    { request: pad([0x52, 0x01], 64), parse: (f) => (f.length < 3 || f[0] !== 0x53 || f[1] !== 0x01 ? null : f[2] ? {} : OFFLINE) },
+    { request: pad([0x50, 0x02], 64), parse: (f) => (f.length < 4 || f[0] !== 0x51 || f[1] !== 0x02 || f[2] < 1 || f[2] > 100 ? null : { capacity: f[2], charging: f[3] === 1 }) },
+  ];
 }
 
 const DEVICES = [
@@ -178,7 +267,8 @@ const DEVICES = [
     }],
   },
   {
-    name: 'SteelSeries Arctis Nova 3P/5', kind: 'headset', vendorId: STEELSERIES, productIds: [0x2269, 0x226d, 0x2232, 0x2253],
+    // 2255 and 2264 are Nova 5X revisions in Arctis-Sound-Manager's nova_5.yaml (not seen by anyone here yet).
+    name: 'SteelSeries Arctis Nova 3P/5', kind: 'headset', vendorId: STEELSERIES, productIds: [0x2269, 0x226d, 0x2232, 0x2253, 0x2255, 0x2264],
     channel: NOVA_CHANNEL, steps: [{ request: STATUS_REQUEST, parse: novaWireless }],
   },
   {
@@ -205,7 +295,20 @@ const DEVICES = [
     ],
   },
   {
-    name: 'HyperX Cloud Flight', kind: 'headset', vendorId: KINGSTON, productIds: [0x16c4, 0x1723],
+    // 1749 is the Cloud Flight for PlayStation (franco314/hyperx-battery, on Windows; HyperHeadset #30).
+    name: 'HyperX Cloud Flight', kind: 'headset', vendorId: KINGSTON, productIds: [0x16c4, 0x1723, 0x1749],
+    steps: [{
+      request: pad([0x21, 0xff, 0x05], 20),
+      parse(f) {
+        if (f.length !== 15 && f.length !== 20) return null;
+        const mv = (f[3] << 8) | f[4];
+        return { capacity: fromVoltage(mv, CLOUD_FLIGHT_CURVE), charging: mv > CLOUD_FLIGHT_CHARGING_MV, voltageMv: mv };
+      },
+    }],
+  },
+  {
+    // The Cloud Flight under HP's vendor id (HyperHeadset #30: an owner's lsusb; the same code path there).
+    name: 'HyperX Cloud Flight (HP)', kind: 'headset', vendorId: HP, productIds: [0x0e90],
     steps: [{
       request: pad([0x21, 0xff, 0x05], 20),
       parse(f) {
@@ -219,7 +322,9 @@ const DEVICES = [
     // Issue #180. From windows-taskbar-battery PR #2 (tested on Windows against NGENUITY's level)
     // and nogenuity's classic.rs, which send the same bytes: report 06 with BB 02 at bytes 14-15;
     // the answer (report 0x0b, as the #180 scan saw on ff13) echoes BB 02 at bytes 2-3, level at 7.
-    name: 'HyperX Cloud Flight S', kind: 'headset', vendorId: KINGSTON, productIds: [0x16ea, 0x16eb],
+    // 1718 is the Kingston-era Cloud II Wireless on the same protocol (HaloBattery #192, HeadsetControl
+    // PR #519); 0b92 is only in HyperHeadset's list.
+    name: 'HyperX Cloud Flight S', kind: 'headset', vendorId: KINGSTON, productIds: [0x16ea, 0x16eb, 0x1718, 0x0b92],
     channel: { usagePage: 0xff13, usage: 0x01 },
     steps: [{
       request: pad([0x06, 0x00, 0x02, 0x00, 0x9a, 0x00, 0x00, 0x68, 0x4a, 0x8e, 0x0a, 0x00, 0x00, 0x00, 0xbb, 0x02], 62),
@@ -231,18 +336,19 @@ const DEVICES = [
     // From auto94's HyperX-Cloud-2-Battery-Monitor (MainForm.cpp, tested on the Core on Windows):
     // write 66 89, the reply carries the level at byte 4 (issues #117, #145). The Cloud III answers
     // on 0xFF13/0x0001; for the Core that project takes the collection with the highest usage.
-    name: 'HyperX Cloud III Wireless', kind: 'headset', vendorId: HP, productIds: [0x05b7, 0x0c9d],
+    name: 'HyperX Cloud III Wireless', kind: 'headset', vendorId: HP, productIds: [0x05b7, 0x0c9d, 0x0fcc], // 0fcc: other receiver (HaloBattery, HyperBatteryMonitor)
     channel: { usagePage: 0xff13, usage: 0x01 },
     steps: [{ request: pad([0x66, 0x89], 52), parse: (f) => (f.length < 5 || f[0] !== 0x66 || f[1] !== 0x89 ? null : f[4] > 100 ? OFFLINE : { capacity: f[4] }) }],
   },
   {
-    name: 'HyperX Cloud II Core Wireless', kind: 'headset', vendorId: HP, productIds: [0x0995],
+    // 0795 is the id it has while charging (HaloBattery #155, answers too); 069f is only in HyperHeadset.
+    name: 'HyperX Cloud II Core Wireless', kind: 'headset', vendorId: HP, productIds: [0x0995, 0x0795, 0x069f],
     steps: [{ request: pad([0x66, 0x89], 52), parse: (f) => (f.length < 5 || f[0] !== 0x66 || f[1] !== 0x89 ? null : f[4] > 100 ? OFFLINE : { capacity: f[4] }) }],
   },
   {
     // Same project: 0c 02 03 01 00 06 on collection 0x01C0/0x0001, level at byte 6, 0xff while off
     // (issue #33).
-    name: 'HyperX Cloud III S Wireless', kind: 'headset', vendorId: HP, productIds: [0x06be],
+    name: 'HyperX Cloud III S Wireless', kind: 'headset', vendorId: HP, productIds: [0x06be, 0x02cc], // 02cc: HaloBattery #106, 89 % = NGENUITY
     channel: { usagePage: 0x01c0, usage: 0x01 },
     steps: [{ request: pad([0x0c, 0x02, 0x03, 0x01, 0x00, 0x06], 52), parse: (f) => (f.length < 7 || f[0] !== 0x0c || f[5] !== 0x06 ? null : f[6] > 100 ? OFFLINE : { capacity: f[6] }) }],
   },
@@ -270,7 +376,8 @@ const DEVICES = [
     // Woken the way HeadsetControl does it without switching to software mode (which pops in the
     // headset): the receiver's firmware and a heartbeat, then a heartbeat to the headset.
     name: 'Corsair Void Wireless v2, HS80 MAX, Virtuoso MAX', kind: 'headset', vendorId: 0x1b1c,
-    productIds: [0x2a08, 0x0a97, 0x2a02],
+    // 2a03, 2a0f, 2a0c, 2a05, 2a12: Xbox and second ids of the same family in OpenLinkHub's devices.go.
+    productIds: [0x2a08, 0x0a97, 0x2a02, 0x2a03, 0x2a0f, 0x2a0c, 0x2a05, 0x2a12],
     channel: { usagePage: 0xff42 },
     steps: [
       bragiStep([0x00], BRAGI_RECEIVER, 0x13, () => ({})),
@@ -322,7 +429,9 @@ const DEVICES = [
     // 0x0a40 is a Virtuoso SE receiver HeadsetControl doesn't list yet (issue #99); its scan shows
     // the same Bragi replies.
     name: 'Corsair Virtuoso SE and XT', kind: 'headset', vendorId: 0x1b1c,
-    productIds: [0x0a3e, 0x0a3d, 0x0a40, 0x0a64],
+    // 0a6b: the HS80 RGB Wireless receiver (HaloBattery, from ST1CKEL/HS80_Control); 0a3f: a second
+    // Virtuoso SE id in OpenLinkHub.
+    productIds: [0x0a3e, 0x0a3d, 0x0a40, 0x0a64, 0x0a6b, 0x0a3f],
     channel: { usagePage: 0xff42, usage: 0x01 },
     steps: [bragiStep([], BRAGI_HEADSET, 0x0f, bragiBattery)],
   },
@@ -344,13 +453,7 @@ const DEVICES = [
     channel: { usagePage: 0xff90, usage: 0x01 },
     steps: [{
       request: pad([0x55, 0x65, 0x01], 64),
-      // Status, as MCHOSE's M HUB reads it: 2 on battery, 3 charging, 4 full, 26 asleep.
-      parse(f) {
-        if (f.length < 4 || f[0] !== 0x55 || f[1] !== 0x65) return null;
-        if (f[3] === 26) return OFFLINE;
-        if (f[3] < 2 || f[3] > 4) return null;
-        return { capacity: clampPercent(f[2]), charging: f[3] === 3 };
-      },
+      parse: mchoseStatus,
     }],
   },
   {
@@ -558,10 +661,7 @@ const DEVICES = [
     // The X9's protocol behind a C-Media dongle (HeadsetControl mchose_v9_pro, issue #43).
     name: 'MCHOSE V9 PRO', kind: 'headset', vendorId: 0x291d, productIds: [0x385d],
     channel: { usagePage: 0xff90 },
-    steps: [{
-      request: pad([0x55, 0x65, 0x01], 64),
-      parse: (f) => (f.length >= 4 && f[0] === 0x55 && f[1] === 0x65 && f[3] === 0x02 ? { capacity: clampPercent(f[2]) } : null),
-    }],
+    steps: [{ request: pad([0x55, 0x65, 0x01], 64), parse: mchoseStatus }],
   },
   {
     name: 'Logitech G633, G733, G933', kind: 'headset', vendorId: LOGITECH, productIds: [0x0a5c, 0x0a89, 0x0a5b, 0x0a87, 0x0ab5, 0x0afe, 0x0b1f],
@@ -580,6 +680,224 @@ const DEVICES = [
   {
     name: 'Logitech G PRO', kind: 'headset', vendorId: LOGITECH, productIds: [0x0aa7, 0x0aaa, 0x0aba, 0x0afb, 0x0afc],
     channel: LOGITECH_CHANNEL, steps: [hidppVoltageStep([0x06, 0x0d], GPRO_CURVE)],
+  },
+
+  {
+    // FIFINE HT6 (HeadsetControl fifine_ht6.hpp, PR #628 on hardware): the MCHOSE X9 protocol.
+    name: 'FIFINE HT6', kind: 'headset', vendorId: 0x3142, productIds: [0x00c3],
+    channel: { usagePage: 0xff90, usage: 0x01 },
+    steps: [{ request: pad([0x55, 0x65, 0x01, 0x00], 64), parse: mchoseStatus }],
+  },
+  {
+    // Corsair HS80 RGB Wireless (0a69) and Virtuoso RGB Wireless XT (0a62) on their cable answer for
+    // themselves (target 0x08): HaloBattery for the HS80, HeadsetControl corsair_virtuoso_xt resolveTarget.
+    name: 'Corsair HS80 RGB, Virtuoso XT (cable)', kind: 'headset', wired: true, vendorId: 0x1b1c, productIds: [0x0a69, 0x0a62],
+    channel: { usagePage: 0xff42, usage: 0x01 },
+    steps: [bragiStep([], BRAGI_RECEIVER, 0x0f, bragiBattery)],
+  },
+  {
+    // Corsair SABRE v3 PRO (issue #249), Slipstream V2: 00 <endpoint> 01 01 02 0F, 513 bytes to the
+    // receiver (endpoint 1), 65 on the cable (endpoint 0); reply <endpoint> .. 01 02 <status> <lo> <hi>,
+    // tenths. HaloBattery corsair.py sabre_v3 (#543: 01 00 01 02 00 ac 03 = 94 %).
+    name: 'Corsair SABRE v3 PRO', kind: 'mouse', vendorId: 0x1b1c, productIds: [0x2b42],
+    channel: { usagePage: 0xff42, usage: 0x01 },
+    steps: [{ request: pad([0x00, 0x01, 0x01, 0x01, 0x02, 0x0f], 513), parse: slipstreamV2(0x01) }],
+  },
+  {
+    name: 'Corsair SABRE v3 PRO (cable)', kind: 'mouse', wired: true, vendorId: 0x1b1c, productIds: [0x2b43],
+    channel: { usagePage: 0xff42, usage: 0x01 },
+    steps: [{ request: pad([0x00, 0x00, 0x01, 0x01, 0x02, 0x0f], 65), parse: slipstreamV2(0x00) }],
+  },
+  {
+    name: 'Razer BlackShark V2 HyperSpeed, Kraken V4 (dongle)', kind: 'headset', vendorId: 0x1532, productIds: [0x0565, 0x056c],
+    channel: { usagePage: 0xff14, usage: 0x01 },
+    steps: [razerMediaTek(0x80)],
+  },
+  {
+    // On the cable; the V2 HyperSpeed's dongle goes quiet while it is plugged in. 0567 is the Kraken V4
+    // Pro headset on its cable (Sebax95's detector, the same frame Synapse sends); its dock is left out.
+    name: 'Razer BlackShark V2 HyperSpeed, Kraken V4, Kraken V4 Pro (cable)', kind: 'headset', vendorId: 0x1532, productIds: [0x056e, 0x056b, 0x0567],
+    channel: { usagePage: 0xff14, usage: 0x01 },
+    steps: [razerMediaTek(0x00)],
+  },
+  {
+    // Razer BlackShark V2 Pro (2020) and Nari: the Avnera exchange (HaloBattery blackshark2020.py with
+    // real frames; Modzeleczek/RazerNariBatteryLevel). Reply FF 0F 05 FE ...: byte 11 power state
+    // (09 charging, 06 charge complete), 12-13 millivolts big-endian, 0 when off.
+    name: 'Razer BlackShark V2 Pro (2020), Nari', kind: 'headset', vendorId: 0x1532, productIds: [0x0528, 0x051c],
+    channel: { usagePage: 0xff00, usage: 0x01 },
+    steps: [avneraStep([0xff, 0x0a, 0x00, 0xfd, 0x04, 0x12, 0xf1, 0x02, 0x05], (f) => {
+      if (f.length < 14 || f[0] !== 0xff || f[1] !== 0x0f || f[3] !== 0xfe) return null;
+      const mv = (f[12] << 8) | f[13];
+      if (mv === 0) return OFFLINE;
+      if (f[11] === 0x06) return { capacity: 100, charging: false, voltageMv: mv };
+      return { capacity: fromVoltage(mv, LI_ION), charging: f[11] === 0x09, voltageMv: mv };
+    }, { wait: 100 })],
+  },
+  {
+    // Razer BlackShark V3 X HyperSpeed, dongle and cable (HaloBattery blackshark_v3x.py, #280 on
+    // hardware; everyoneexe/blackshark-linux PROTOCOL.md): feature report 7 on 0xFF82 only, XOR of
+    // bytes 3-60 in byte 62. Command 0x80 is the level, 0x84 charging; byte 1 = 0x01 means busy.
+    name: 'Razer BlackShark V3 X HyperSpeed', kind: 'headset', vendorId: 0x1532, productIds: [0x057d, 0x057c],
+    channel: { usagePage: 0xff82, usage: 0x01 },
+    steps: [blackSharkV3x(0x80, (v) => (v >= 1 && v <= 100 ? { capacity: v } : OFFLINE)), blackSharkV3x(0x84, (v) => ({ charging: v === 1 }))],
+  },
+  {
+    // ASUS ROG Strix Go 2.4 (HaloBattery asus.py, frames from its #190 reporter): the Avnera exchange,
+    // millivolts at 11-12, byte 9 0x0A charging, in Armoury Crate's steps.
+    name: 'ASUS ROG Strix Go 2.4', kind: 'headset', vendorId: 0x0b05, productIds: [0x18d6],
+    steps: [avneraStep([0xff, 0x08, 0x00, 0xfd, 0x04, 0x12, 0xf1, 0x03, 0x52, 0x01], strixGo, { wait: 35, tries: 3 })],
+  },
+  {
+    name: 'ASUS ROG Strix Go 2.4 (cable)', kind: 'headset', wired: true, vendorId: 0x0b05, productIds: [0x18d7],
+    steps: [avneraStep([0xff, 0x08, 0x00, 0xfd, 0x04, 0x12, 0xf1, 0x03, 0x52, 0x01], (f) => {
+      const reading = strixGo(f);
+      return reading && !reading.offline ? { ...reading, charging: true } : reading;
+    }, { wait: 35, tries: 3 })],
+  },
+  {
+    // ASUS TUF Gaming H3 Wireless (HaloBattery asus.py, its maintainer's headset: 3904 mV = 75 % in
+    // Armoury Crate): FF 12 05 FE ... byte 9 0x05 charging / 0x03 battery / 0x0A no information yet.
+    name: 'ASUS TUF Gaming H3 Wireless', kind: 'headset', vendorId: 0x0b05, productIds: [0x1963],
+    steps: [avneraStep([0xff, 0x07, 0x00, 0xfd, 0x04, 0x0c, 0xf1, 0x02, 0x01], (f) => {
+      if (f.length < 13 || f[0] !== 0xff || f[1] !== 0x12 || f[3] !== 0xfe || f[9] === 0x0a) return null;
+      const mv = f[11] | (f[12] << 8);
+      if (mv === 0) return OFFLINE;
+      return { capacity: Math.min(100, Math.ceil(fromVoltage(mv, LI_ION) / 25) * 25), charging: f[9] === 0x05, voltageMv: mv };
+    }, { wait: 50, tries: 4 })],
+  },
+  {
+    // HyperX Cloud Core Wireless (HyperHeadset issue #59, the owner's Windows logs; HaloBattery
+    // hyperx_cloud_core.py): only millivolts, so the level is the Cloud Flight's curve. The answer
+    // lives about 30 ms, so it is read often.
+    name: 'HyperX Cloud Core Wireless', kind: 'headset', vendorId: KINGSTON, productIds: [0x173f, 0x1740],
+    channel: { usagePage: 0xff00, usage: 0x01 },
+    steps: [avneraStep([0xff, 0x07, 0x00, 0xfd, 0x04, 0x0c, 0xf1, 0x02, 0x01, 0x04, 0xf0, 0x0c], (f) => {
+      if (f.length < 13 || f[0] !== 0xff || f[1] !== 0x12 || f[3] !== 0xfe) return null;
+      const mv = f[11] | (f[12] << 8);
+      if (mv === 0) return OFFLINE;
+      return { capacity: fromVoltage(mv, CLOUD_FLIGHT_CURVE), charging: f[9] === 0x05, voltageMv: mv };
+    }, { wait: 20, tries: 8 })],
+  },
+  {
+    // HyperX Cloud Alpha 2 Wireless (HeadsetControl hyperx_cloud_alpha_2_wireless.hpp, PR #590 on
+    // Windows 11; HaloBattery): 52 01 asks if the headset is on (53 01 <on>), 50 02 for the battery
+    // (51 02 <level> <charging>).
+    name: 'HyperX Cloud Alpha 2 Wireless', kind: 'headset', vendorId: HP, productIds: [0x08be],
+    channel: { usagePage: 0xff13, usage: 0xff00 },
+    steps: hyperxAlpha2Steps(),
+  },
+  {
+    // SteelSeries Arctis Nova Pro Omni (HeadsetControl PR #584, Windows) and Nova Elite (HaloBattery
+    // #138: 31 % = GG): 01 B0 as report 1; level at 6, status at 15 (01 off, 02 charging, 08 on).
+    // The Elite reports 0 % when the headset is off.
+    name: 'SteelSeries Arctis Nova Pro Omni, Nova Elite', kind: 'headset', vendorId: STEELSERIES, productIds: [0x2290, 0x2244],
+    channel: { usagePage: 0xffc0, usage: 0x01, interface: 3 },
+    steps: [{
+      request: pad([0x01, 0xb0], 64),
+      parse: (f) => (f.length < 16 || f[0] !== 0x01 || f[1] !== 0xb0 ? null
+        : f[15] === 0x01 || f[6] === 0 || f[6] > 100 ? OFFLINE : { capacity: f[6], charging: f[15] === 0x02 }),
+    }],
+  },
+  {
+    // SteelSeries Arctis GameBuds (HeadsetControl steelseries_arctis_gamebuds.hpp; Arctis-Sound-Manager,
+    // confirmed by a USB capture): 00 B0 -> B0 .. .. <left state> <right state> <left %> <right %>,
+    // state 2 docked, 3 out of the case. The card shows the lower bud.
+    name: 'SteelSeries Arctis GameBuds', kind: 'headset', vendorId: STEELSERIES, productIds: [0x230a],
+    channel: NOVA_CHANNEL,
+    steps: [{
+      request: STATUS_REQUEST,
+      parse(f) {
+        if (f.length < 7 || f[0] !== 0xb0) return null;
+        const buds = [[f[3], f[5]], [f[4], f[6]]].filter(([state, level]) => (state === 2 || state === 3) && level >= 1 && level <= 100);
+        return buds.length ? { capacity: Math.min(...buds.map(([, level]) => level)), charging: false } : OFFLINE;
+      },
+    }],
+  },
+  {
+    // Logitech G325 LIGHTSPEED (HeadsetControl #581, the owner's capture against G HUB; HaloBattery
+    // #232): 50 23 0B 00 03 1A 00 03 00 07 0A, then 50 23 0B 00 03 10 00 06 00 07 0A <raw> <G HUB %> <state>.
+    name: 'Logitech G325', kind: 'headset', vendorId: LOGITECH, productIds: [0x0b21],
+    channel: LOGITECH_CENTURION,
+    steps: [{
+      request: pad([0x50, 0x23, 0x0b, 0x00, 0x03, 0x1a, 0x00, 0x03, 0x00, 0x07, 0x0a], 64),
+      parse: (f) => (f.length < 14 || f[0] !== 0x50 || f[1] !== 0x23 || f[2] !== 0x0b || f[5] !== 0x10 || f[9] !== 0x07 ? null
+        : f[12] >= 1 && f[12] <= 100 ? { capacity: f[12], charging: f[13] === 0x02 } : null),
+    }],
+  },
+  {
+    // Logitech G PRO X 2 LIGHTSPEED, HeadsetControl's fixed-index request (buildLegacyBatteryRequest,
+    // parseLegacyBatteryResponse, isLegacyPowerOffPacket). 51 03 is the acknowledgement.
+    name: 'Logitech G PRO X 2', kind: 'headset', vendorId: LOGITECH, productIds: [0x0af7],
+    channel: LOGITECH_CENTURION,
+    steps: [{
+      request: pad([0x51, 0x08, 0x00, 0x03, 0x1a, 0x00, 0x03, 0x00, 0x04, 0x0a], 64),
+      parse(f) {
+        if (f.length < 13 || f[0] !== 0x51) return null;
+        if (f[1] === 0x05 && f[6] === 0x00) return OFFLINE;
+        if (f[1] !== 0x0b || f[8] !== 0x04) return null;
+        return f[10] >= 1 && f[10] <= 100 ? { capacity: f[10], charging: f[12] === 0x02 } : null;
+      },
+    }],
+  },
+  {
+    // Jabra Link 390 (HeadsetControl PR #632, 2e51 on Windows) and Link 380 (PR #596, 24c7).
+    name: 'Jabra Link 390', kind: 'headset', vendorId: 0x0b0e, productIds: [0x2e50, 0x2e51, 0x2e56, 0x2e57],
+    channel: { usagePage: 0xff00, usage: 0x05 }, steps: [jabraStep(0x04)],
+  },
+  {
+    name: 'Jabra Link 380', kind: 'headset', vendorId: 0x0b0e, productIds: [0x24c7, 0x24c8, 0x24c9, 0x24ca, 0x24e9],
+    channel: { usagePage: 0xff00, usage: 0x01 }, steps: [jabraStep(0x04)],
+  },
+  {
+    // On their own USB: Evolve3 75 (HeadsetControl PR #632, 2548 on Windows), Evolve2 65 Flex (2519).
+    name: 'Jabra Evolve3 75', kind: 'headset', vendorId: 0x0b0e, productIds: [0x2546, 0x2547, 0x2548],
+    channel: { usagePage: 0xff00, usage: 0x05 }, steps: [jabraStep(0x08)],
+  },
+  {
+    name: 'Jabra Evolve2 65 Flex', kind: 'headset', vendorId: 0x0b0e, productIds: [0x2517, 0x2518, 0x2519],
+    channel: { usagePage: 0xff00, usage: 0x01 }, steps: [jabraStep(0x08)],
+  },
+  {
+    // Lenovo Wireless VoIP Headset (HeadsetControl lenovo_wireless_voip.hpp, PR #497): feature report
+    // 24 01, answered as input 27 01 <error> .. .. .. .. <level>.
+    name: 'Lenovo Wireless VoIP Headset', kind: 'headset', vendorId: 0x17ef, productIds: [0xa07d],
+    channel: { usagePage: 0xff07, usage: 0x0222 },
+    steps: [{
+      via: 'feature-input', request: pad([0x24, 0x01], 61),
+      parse: (f) => (f.length < 8 || f[0] !== 0x27 || f[1] !== 0x01 ? null : f[2] !== 0 ? OFFLINE
+        : f[7] >= 1 && f[7] <= 100 ? { capacity: f[7] } : null),
+    }],
+  },
+  {
+    // Plantronics / Poly BT600 dongle with a Voyager headset (HeadsetControl plantronics_bt600.hpp,
+    // PR #536 checked live; HaloBattery #328 = Poly's app). Each read replays the attach first (it
+    // changes nothing), then asks for the battery: level out of <count - 1> steps.
+    name: 'Poly BT600 (Voyager headsets)', kind: 'headset', vendorId: 0x047f, productIds: [0x02ee, 0x02f7],
+    channel: { usagePage: 0xffa2, usage: 0x03 },
+    steps: [
+      { noReply: true, wait: 100, request: [0x06, 0x01], parse: () => null },
+      { noReply: true, wait: 150, request: pad([0x07, 0x01, 0x01, 0x10, 0x07, 0x00, 0x00, 0x00, 0x01, 0x01, 0x02], 64), parse: () => null },
+      { noReply: true, wait: 150, request: pad([0x07, 0x01, 0x01, 0x10, 0x07, 0x20, 0x00, 0x00, 0x01, 0x01, 0x02], 64), parse: () => null },
+      {
+        request: pad([0x07, 0x01, 0x01, 0x10, 0x06, 0x20, 0x00, 0x00, 0x02, 0x0a, 0x1a], 64),
+        parse(f) {
+          if (f.length < 14 || f[0] !== 0x07 || f[1] !== 0x01 || f[2] !== 0x01 || f[3] !== 0x10) return null;
+          if (f[8] !== 0x03 || f[9] !== 0x0a || f[10] !== 0x1a || f[12] < 2) return null;
+          return { capacity: clampPercent(Math.round((f[11] / (f[12] - 1)) * 100)), charging: f[13] !== 0 };
+        },
+      },
+    ],
+  },
+  {
+    // JBL Quantum 810 and 910 (Visner-org/jbl-quantum-battery, tested): two read-only feature reports,
+    // 0x68 = headset on, 0x49 = level in 5 % steps (kept from before when off, so 0x68 comes first).
+    name: 'JBL Quantum 810, 910', kind: 'headset', vendorId: 0x0ecb, productIds: [0x2069, 0x2088],
+    channel: { usagePage: 0xff13 },
+    steps: [
+      { via: 'feature', reportId: 0x68, length: 2, wait: 0, tries: 1, parse: (f) => (f[0] !== 0x68 ? null : f[1] === 1 ? {} : OFFLINE) },
+      { via: 'feature', reportId: 0x49, length: 2, wait: 0, tries: 1, parse: (f) => (f[0] !== 0x49 || f[1] < 1 || f[1] > 100 ? null : { capacity: f[1] }) },
+    ],
   },
 
   // Mice

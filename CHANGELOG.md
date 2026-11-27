@@ -8,6 +8,13 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Headsets, from HeadsetControl, HaloBattery, HyperHeadset and OpenLinkHub, each checked on hardware by its source: Sony
+  INZONE H5 and H9 II; Razer BlackShark V2 HyperSpeed, Kraken V4 and V4 Pro (cable), BlackShark V3 X HyperSpeed,
+  BlackShark V2 Pro (2020) and Nari; SteelSeries Arctis Nova Pro Omni, Nova Elite and GameBuds; HyperX Cloud Alpha 2
+  Wireless, Cloud Core Wireless and more Cloud ids; Corsair HS80 RGB and Virtuoso XT on their cable, SABRE v3 PRO
+  (issue #249); Logitech G325 and G PRO X 2; Jabra Link 380/390, Evolve3 75 and Evolve2 65 Flex; Poly BT600; JBL
+  Quantum 810/910; Lenovo Wireless VoIP; ASUS ROG Strix Go 2.4 and TUF Gaming H3; Audeze Maxwell Xbox and ANC dongles;
+  Skullcandy PLYR and Crusher PLYR 720; FIFINE HT6.
 - Corsair: more Slipstream dongles (Dark Core RGB Pro and Pro SE, Ironclaw, Harpoon, Katar Pro), the K65 PLUS dongle, and
   wireless mice and keyboards on their cable, in OpenLinkHub's framing (HaloBattery checked it on hardware).
 - AULA F108 Pro on its dongle, which uses Apple's vendor id (issue #81).
@@ -19,6 +26,7 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- MCHOSE V9 PRO: read while charging or full, and "asleep"; only a headset on battery was read (issues #43, #250).
 - Corsair Slipstream receiver (issue #46): asked in OpenLinkHub's framing, which its replies fit, with the old framing
   kept as a fallback.
 - VSG Aquila Fly and Redragon M913 receivers (25a7:fa3f, fa07) showed a tenth of the level (6% for 60%), and a full

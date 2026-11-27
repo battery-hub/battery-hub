@@ -96,25 +96,31 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | Bluetooth | Any paired device that reports its battery to Windows |
 | Xbox | Wireless controllers |
 | PlayStation | DualSense, DualSense Edge, DualShock 4 (USB and Bluetooth) |
-| Sony | INZONE Buds (USB dongle) |
+| Sony | INZONE Buds (USB dongle), INZONE H5, INZONE H9 II |
 | Nintendo | Switch Pro Controller and clones, Joy-Con (Bluetooth) |
 | Flydigi | Vader 4 Pro, Vader 5 Pro, Apex 4, 5 and 6 |
 | 8BitDo | Ultimate 2 Wireless and Bluetooth, Ultimate 3 (D-input mode) |
 | Valve | Steam Controller (2015, on its receiver) and Steam Controller (2026) |
 | Other controllers | NVIDIA SHIELD controller, Amazon Luna (Bluetooth), SInput pads such as the ProGCC |
-| Logitech | Mice and keyboards using HID++ 2.0 (Bolt, Unifying, Lightspeed, including the newest receiver of the PRO X3 SUPERSTRIKE); G PRO, G533, G535, G633, G733, G933, G935 headsets |
-| Razer | 81 wireless mice and keyboards; BlackShark V3 and V3 Pro headsets |
-| SteelSeries | Arctis 1, 7, 7+, 9, Nova 3P, Nova 5, Nova 7, Nova Pro Wireless headsets; Aerox, Prime and Rival 3 Wireless mice |
-| HyperX | Cloud Alpha Wireless, Cloud Flight, Cloud Flight S, Cloud II Wireless, Cloud II Core Wireless, Cloud III Wireless, Cloud III S Wireless, Cloud Stinger 2 Wireless |
-| Corsair | Void, Void Wireless v2 (also on its cable), HS80 MAX, Virtuoso, Virtuoso SE, XT and MAX headsets; Slipstream receivers and the Dark Core RGB Pro, Ironclaw, Harpoon and Katar Pro dongles; M65, M75, Dark Core, Scimitar, Nightsabre, Sabre and other wireless mice on their cable; K65 PLUS (and its dongle), K70 CORE TKL, K100 AIR, K70 PRO MINI, MAKR 75 and VANGUARD keyboards on their cable |
-| Audeze | Maxwell, Maxwell 2 |
+| Logitech | Mice and keyboards using HID++ 2.0 (Bolt, Unifying, Lightspeed, including the newest receiver of the PRO X3 SUPERSTRIKE); G PRO, G PRO X 2, G325, G533, G535, G633, G733, G933, G935 headsets |
+| Razer | 81 wireless mice and keyboards; BlackShark V3, V3 Pro, V3 X HyperSpeed, V2 HyperSpeed, V2 Pro (2020), Kraken V4, Kraken V4 Pro (cable) and Nari headsets |
+| SteelSeries | Arctis 1, 7, 7+, 9, Nova 3P, Nova 5, Nova 7, Nova Pro Wireless, Nova Pro Omni, Nova Elite headsets, Arctis GameBuds; Aerox, Prime and Rival 3 Wireless mice |
+| HyperX | Cloud Alpha Wireless, Cloud Alpha 2 Wireless, Cloud Core Wireless, Cloud Flight (also for PlayStation), Cloud Flight S, Cloud II Wireless, Cloud II Core Wireless, Cloud III Wireless, Cloud III S Wireless, Cloud Stinger 2 Wireless |
+| Corsair | Void, Void Wireless v2 (also on its cable), HS80 MAX, HS80 RGB, Virtuoso, Virtuoso SE, XT and MAX headsets; SABRE v3 PRO; Slipstream receivers and the Dark Core RGB Pro, Ironclaw, Harpoon and Katar Pro dongles; M65, M75, Dark Core, Scimitar, Nightsabre, Sabre and other wireless mice on their cable; K65 PLUS (and its dongle), K70 CORE TKL, K100 AIR, K70 PRO MINI, MAKR 75 and VANGUARD keyboards on their cable |
+| Audeze | Maxwell, Maxwell 2 (including the Xbox and ANC dongles) |
+| Skullcandy | PLYR, Crusher PLYR 720 |
 | ELECOM | BlueLED Mouse over Bluetooth (056e:00e5, listed as "Broadcom Bluetooth Wireless Mouse") |
 | Astro | A50 Gen 4, A50 Gen 5 |
+| Jabra | Link 380 and Link 390 dongles, Evolve3 75, Evolve2 65 Flex |
+| Poly (Plantronics) | Voyager headsets on the BT600 dongle |
+| JBL | Quantum 810, Quantum 910 |
+| Lenovo | Wireless VoIP Headset |
+| FIFINE | HT6 |
 | MCHOSE | V9 Turbo+, V9 PRO, V9 Pro 2, X9 headsets; A7 V2 Ultra, A7 V2 Pro, A5 Ultra, K7 Ultra, A7 Ultra, G3 A mice; G75 V2, G87 V2, K87S, K99 V3 keyboards |
 | VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers; ATK NearLink and BitMouse receivers, X1 NearLink; ATK 8K Nano and 1K/8K dongles |
 | Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X, Atlantis OG and Mini, TACHI, INCA, PARO, THORN and other LAMZU mice |
 | Beken/Xenta 2.4G receiver | Attack Shark and other mice on 1d57:fa60 and fa55 |
-| ASUS | ROG Claymore II keyboard; ROG Gladius III AimPoint and mice on the ROG OMNI receiver |
+| ASUS | ROG Strix Go 2.4 and TUF Gaming H3 Wireless headsets; ROG Claymore II keyboard; ROG Gladius III AimPoint and mice on the ROG OMNI receiver |
 | MSI | VERSA 300 Elite Wireless |
 | Bloody | R73 Pro and other Bloody wireless mice |
 | Waizowl | OGM 8K |
