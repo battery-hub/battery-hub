@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+## [2.0.9] - 2026-11-27
+
 ### Added
 
 - From the makers' own web apps (read from their code, not yet confirmed on hardware): VGN's YJX, "ldMs", "king" and
@@ -488,7 +490,8 @@ First stable release, consolidating the 1.0.x and 1.1.x series.
 Initial public release: live battery monitoring for wireless HID devices, per-device tray
 icons, low-battery notifications, history sparklines and the guided calibration wizard.
 
-[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.8...HEAD
+[Unreleased]: https://github.com/battery-hub/battery-hub/compare/v2.0.9...HEAD
+[2.0.9]: https://github.com/battery-hub/battery-hub/compare/v2.0.8...v2.0.9
 [2.0.8]: https://github.com/battery-hub/battery-hub/compare/v2.0.7...v2.0.8
 [2.0.7]: https://github.com/battery-hub/battery-hub/compare/v2.0.6...v2.0.7
 [2.0.6]: https://github.com/battery-hub/battery-hub/compare/v2.0.5...v2.0.6
