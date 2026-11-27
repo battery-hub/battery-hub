@@ -8,6 +8,13 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Keyboards: ASUS ROG Azoth, Azoth X/Extreme, Falchion, Falchion RX LP, Strix Scope II 96 and Scope RX TKL Wireless
+  (G-Helper); MCHOSE K87 and G98 Pro; Lofree Flow Lite84; GANSS GS3075T; Alienware Pro Wireless; Red Square Alumix
+  TKL; CHERRY MX 3.0S Wireless; SteelSeries Apex Pro TKL Wireless and Apex Pro Mini Wireless; Razer BlackWidow V4
+  Low Profile TKL HyperSpeed. Most were checked on hardware by HaloBattery or G-Helper; the Apex Pro's level scale is
+  not yet confirmed.
+- Razer Basilisk V4 Pro, Basilisk V4 HyperSpeed, Naga V3 Pro and Orochi V2 (2026), from OpenRazer (open PRs, each
+  tested by its author).
 - Headsets, from HeadsetControl, HaloBattery, HyperHeadset and OpenLinkHub, each checked on hardware by its source: Sony
   INZONE H5 and H9 II; Razer BlackShark V2 HyperSpeed, Kraken V4 and V4 Pro (cable), BlackShark V3 X HyperSpeed,
   BlackShark V2 Pro (2020) and Nari; SteelSeries Arctis Nova Pro Omni, Nova Elite and GameBuds; HyperX Cloud Alpha 2
@@ -26,6 +33,9 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- Mice on the 3554:fa09 Compx receiver that never answer the keyboard session are now read as mice (issues #244,
+  #190, #82, #116).
+- Razer BlackWidow V3 Pro on its cable: asked with the transaction id OpenRazer uses for it (0x3f, not 0xff).
 - MCHOSE V9 PRO: read while charging or full, and "asleep"; only a headset on battery was read (issues #43, #250).
 - Corsair Slipstream receiver (issue #46): asked in OpenLinkHub's framing, which its replies fit, with the old framing
   kept as a fallback.

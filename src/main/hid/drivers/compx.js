@@ -41,8 +41,15 @@ const REQUESTS = [SESSION, ...QUERIES];
 
 const channelOf = (logicalDevice) => logicalDevice.channels.find((c) => c.usagePage === USAGE_PAGE && (c.usage === undefined || c.usage === 2));
 
+// MCHOSE's K87 (41e4:2001) and G98 Pro (41e4:2004) receivers send the same 13 4A frames (HaloBattery
+// mchose_kb.py from MCHOSE's M HUB, #378 on hardware: 94 % on battery, 50 % charging on the cable).
+const MCHOSE_KB = 0x41e4;
+const MCHOSE_KB_PRODUCTS = new Set([0x2001, 0x2004]);
+
 function matches(logicalDevice) {
-  return logicalDevice.vendorId === VENDOR && logicalDevice.productId === PRODUCT && !!channelOf(logicalDevice);
+  const { vendorId, productId } = logicalDevice;
+  const known = (vendorId === VENDOR && productId === PRODUCT) || (vendorId === MCHOSE_KB && MCHOSE_KB_PRODUCTS.has(productId));
+  return known && !!channelOf(logicalDevice);
 }
 
 // A battery reading, { ack: true } for the receiver's session answer, or null for anything else.
@@ -106,6 +113,9 @@ async function readBattery(logicalDevice) {
   await sent;
   if (control) return control;
   if (answered) throw new Error('keyboard is not answering');
+  // No session answer at all: 3554:fa09 also carries mice (issues #244, #190, #82, #116), which speak
+  // the VXE mouse frame instead. Required here, not at the top, as kysona.js requires this file.
+  if (logicalDevice.vendorId === VENDOR) return require('./kysona').readMouse(logicalDevice);
   throw writeError || controlError || new Error('timeout waiting for battery response');
 }
 

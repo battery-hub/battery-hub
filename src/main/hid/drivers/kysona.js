@@ -14,6 +14,7 @@
 const { findChannel } = require('../catalog');
 const session = require('../session');
 const compx = require('./compx');
+const table = require('./table');
 
 const USAGE_PAGE_COMMAND = 0xFF02;
 const BATTERY_REQUEST = [0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x49];
@@ -41,6 +42,8 @@ const VGN_COMPX_PIDS = new Set([0x1005, 0x1a05, 0x101d, 0x1a1a, 0x1032, 0x102d, 
 
 function matches(logicalDevice) {
   if (compx.matches(logicalDevice)) return false;
+  // A device the table describes with its own frame (Lofree's keyboard flag, Zebronics) is left to it.
+  if (table.find(logicalDevice)) return false;
   if (logicalDevice.vendorId === VGN) return VGN_COMPX_PIDS.has(logicalDevice.productId) && hasCollection(logicalDevice, 0xff02, 0x0002);
   if (KNOWN_VENDOR_IDS.has(logicalDevice.vendorId)) return !!findChannel(logicalDevice, USAGE_PAGE_COMMAND);
   return COMPX_CHIP_VENDOR_IDS.has(logicalDevice.vendorId) && hasCompxLayout(logicalDevice);
@@ -89,6 +92,11 @@ function commandChannels(logicalDevice) {
 async function readBattery(logicalDevice) {
   // Cards added before the Compx keyboard receiver had its own driver are saved under this one.
   if (compx.matches(logicalDevice)) return compx.readBattery(logicalDevice);
+  return readMouse(logicalDevice);
+}
+
+// The mouse read itself, also used by compx.js when the 3554:fa09 receiver turns out to carry a mouse.
+async function readMouse(logicalDevice) {
   const channels = commandChannels(logicalDevice);
   if (!channels.length) throw new Error('no command channel');
   // A channel that refuses the request, or has no input report and doesn't answer through feature
@@ -258,4 +266,4 @@ async function readByInput(channel) {
 }
 
 // The mouse reappears under another product id while charging over its cable.
-module.exports = { id: 'kysona', hasWiredIdentity: true, matches, parseFrame, parseStatus, readBattery };
+module.exports = { id: 'kysona', hasWiredIdentity: true, matches, parseFrame, parseStatus, readBattery, readMouse };

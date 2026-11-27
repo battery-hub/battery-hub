@@ -238,6 +238,28 @@ function hyperxAlpha2Steps() {
   ];
 }
 
+// ROG keyboards' 12 01 reply (G-Helper AsusKeyboard.cs ParseBattery): 12 01 .. .. .. <level> .. ..
+// <charging>, FF AA when asleep, at the start or where the level goes.
+function asusKeyboard(f, levelAt) {
+  if ((f[0] === 0xff && f[1] === 0xaa) || (f[0] === 0x12 && f[5] === 0xff && f[6] === 0xaa)) return OFFLINE;
+  if (f.length < Math.max(9, levelAt + 1) || f[0] !== 0x12 || f[1] !== 0x01) return null;
+  if (f[levelAt] < 1 || f[levelAt] > 100) return null;
+  return { capacity: f[levelAt], charging: f[8] === 1 };
+}
+
+function lofreeFrame(command) {
+  const f = new Array(17).fill(0);
+  f[0] = 0x08; f[1] = command; f[5] = 0x80;
+  f[16] = (0x55 - f.reduce((a, b) => a + b, 0)) & 0xff;
+  return f;
+}
+function lofreeSteps() {
+  return [
+    { request: lofreeFrame(0x03), parse: (f) => (f.length < 7 || f[0] !== 0x08 || f[1] !== 0x03 ? null : f[6] === 1 ? {} : OFFLINE) },
+    { request: lofreeFrame(0x04), parse: (f) => (f.length < 8 || f[0] !== 0x08 || f[1] !== 0x04 || f[6] < 1 || f[6] > 100 ? null : { capacity: f[6], charging: !!f[7] }) },
+  ];
+}
+
 const DEVICES = [
   // Headsets
   {
@@ -515,15 +537,75 @@ const DEVICES = [
     // log in its issue #5482): unnumbered output 12 01 on interface 1 (0xFF00/0x0001). The reply,
     // without the report id, is 12 01 .. .. .. <percent> .. .. <charging>; FF AA means asleep.
     // Only 12 01 is sent: G-Helper's other commands on this keyboard change its settings.
-    name: 'ASUS ROG Claymore II', kind: 'keyboard', vendorId: 0x0b05, productIds: [0x196b],
+    // The same 12 01 reads ROG keyboards G-Helper lists with a battery (AsusKeyboard.cs, Models/Azoth.cs,
+    // StrixScopeII.cs, StrixScopeRX.cs); HaloBattery confirmed it on an Azoth and an Azoth X: Azoth 1a83 /
+    // its dongle 1a85, Azoth X 1c24 / 1c25, Azoth Extreme 1b3f and SE 1cef, Strix Scope II 96 Wireless
+    // 1aae, Scope II 96 RX 1b78, Scope RX TKL Wireless 1a07.
+    name: 'ASUS ROG Claymore II, Azoth, Strix Scope', kind: 'keyboard', vendorId: 0x0b05,
+    productIds: [0x196b, 0x1a83, 0x1a85, 0x1c24, 0x1c25, 0x1b3f, 0x1cef, 0x1aae, 0x1b78, 0x1a07],
+    channel: { usagePage: 0xff00, usage: 0x01 },
+    steps: [{ request: pad([0x00, 0x12, 0x01], 65), parse: (f) => asusKeyboard(f, 5) }],
+  },
+  {
+    // The Falchion family puts the level at byte 10 (byte 5 is a 0-10 gauge there): Falchion 193c / its
+    // dongle 193e, Falchion RX LP 1b04 (HaloBattery checked it on hardware).
+    name: 'ASUS ROG Falchion', kind: 'keyboard', vendorId: 0x0b05, productIds: [0x193c, 0x193e, 0x1b04],
+    channel: { usagePage: 0xff00, usage: 0x01 },
+    steps: [{ request: pad([0x00, 0x12, 0x01], 65), parse: (f) => asusKeyboard(f, 10) }],
+  },
+  {
+    // Lofree Flow Lite84 on its Compx receiver (HaloBattery lofree.py, from Lofree's own Control HUB;
+    // #165 and #557 on hardware). The VXE frame with the keyboard flag 0x80 at byte 5, summing to 0x55:
+    // 08 03 .. 80 .. CA asks if it is on (byte 6 = 1), 08 04 .. 80 .. C9 for the level (6) and charging (7).
+    // Its receiver is 3554:fa0a, or Apple's 05ac:024f, both named "2.4G Wireless Receiver".
+    name: 'Lofree Flow Lite84', kind: 'keyboard', vendorId: 0x3554, productIds: [0xfa0a], product: /^2\.4G Wireless Receiver$/i,
+    channel: { usagePage: 0xff02, usage: 0x02 },
+    steps: lofreeSteps(),
+  },
+  {
+    name: 'Lofree Flow Lite84', kind: 'keyboard', vendorId: 0x05ac, productIds: [0x024f], product: /^2\.4G Wireless Receiver$/i,
+    channel: { usagePage: 0xff02, usage: 0x02 },
+    steps: lofreeSteps(),
+  },
+  {
+    // Alienware Pro Wireless Gaming Keyboard receiver (HaloBattery alienware.py, a USBPcap of Alienware
+    // Command Center; on hardware: 92 %, charging followed the cable): feature report 0E A1, answered
+    // as input 0E A1 <level> <state>, state 0x04 = charging. The channel also pushes other 0E frames.
+    name: 'Alienware Pro Wireless Keyboard', kind: 'keyboard', vendorId: 0x413c, productIds: [0x211d],
     channel: { usagePage: 0xff00, usage: 0x01 },
     steps: [{
-      request: pad([0x00, 0x12, 0x01], 65),
+      via: 'feature-input', request: pad([0x00, 0x0e, 0xa1], 65),
       parse(f) {
-        if ((f[0] === 0xff && f[1] === 0xaa) || (f[0] === 0x12 && f[5] === 0xff && f[6] === 0xaa)) return OFFLINE;
-        if (f.length < 9 || f[0] !== 0x12 || f[1] !== 0x01) return null;
-        if (f[5] < 1 || f[5] > 100) return null;
-        return { capacity: f[5], charging: f[8] === 1 };
+        const o = f[0] === 0x00 ? 1 : 0;
+        if (f.length < o + 4 || f[o] !== 0x0e || f[o + 1] !== 0xa1 || f[o + 2] < 1 || f[o + 2] > 100) return null;
+        return { capacity: f[o + 2], charging: f[o + 3] === 0x04 };
+      },
+    }],
+  },
+  {
+    // Red Square Alumix TKL (HaloBattery redsquare.py, from conf.red-square.org; tested by its #460
+    // reporter): report 7, settings READ (0x8B), the battery after sleep time and debounce. No charging.
+    name: 'Red Square Alumix TKL', kind: 'keyboard', vendorId: 0x342d, productIds: [0xe411], product: /RSQ[ _]20055/i,
+    channel: { usagePage: 0xff60, usage: 0x61 },
+    steps: [{
+      request: pad([0x07, 0x05, 0x01, 0x01, 0x0a, 0x07, 0x8b], 33),
+      parse: (f) => (f.length < 10 || f[0] !== 0x07 || f[1] !== 0x05 || f[2] !== 0xa1 || f[6] !== 0x8b || f[9] < 1 || f[9] > 100 ? null
+        : { capacity: f[9] }),
+    }],
+  },
+  {
+    // GANSS GS3075T on a SONiX 0c45:fefe receiver (HaloBattery gs3075t.py, level and charge measured by
+    // its #379 reporter): AA 10 18 after the zero report id; the reply 55 10 18 has the level at byte 25
+    // and 0x01 / 0x02 at 26 on the cable (full / charging). hidapi may keep the zero, so both offsets.
+    name: 'GANSS GS3075T', kind: 'keyboard', vendorId: 0x0c45, productIds: [0xfefe], product: /GS3075T/i,
+    channel: { usagePage: 0xff60, usage: 0x61 },
+    steps: [{
+      request: pad([0x00, 0xaa, 0x10, 0x18], 33),
+      parse(f) {
+        const o = f[0] === 0x00 && f[1] === 0x55 ? 1 : 0;
+        if (f.length < o + 27 || f[o] !== 0x55 || f[o + 1] !== 0x10 || f[o + 2] !== 0x18) return null;
+        const level = f[o + 25];
+        return level >= 1 && level <= 100 ? { capacity: level, charging: f[o + 26] === 0x01 || f[o + 26] === 0x02 } : null;
       },
     }],
   },
@@ -898,6 +980,23 @@ const DEVICES = [
       { via: 'feature', reportId: 0x68, length: 2, wait: 0, tries: 1, parse: (f) => (f[0] !== 0x68 ? null : f[1] === 1 ? {} : OFFLINE) },
       { via: 'feature', reportId: 0x49, length: 2, wait: 0, tries: 1, parse: (f) => (f[0] !== 0x49 || f[1] < 1 || f[1] > 100 ? null : { capacity: f[1] }) },
     ],
+  },
+
+  {
+    // SteelSeries Apex Pro TKL Wireless (2023) and Apex Pro Mini Wireless dongles (GUHPY/SteelSeries-OpenGG
+    // ApexProtocol.cs, aw2p/APEX protocol.py; replies seen on hardware): BC asks if the keyboard is
+    // linked (BC 01), D2 for the battery, in the Aerox's 5 % steps (OpenGG notes the scale is unchecked).
+    name: 'SteelSeries Apex Pro Wireless', kind: 'keyboard', vendorId: STEELSERIES, productIds: [0x1644, 0x1624],
+    channel: { usagePage: 0xffc0, usage: 0x01, interface: 3 },
+    steps: [
+      { request: pad([0x00, 0xbc], 65), parse: (f) => (f.length < 2 || f[0] !== 0xbc ? null : f[1] === 0x01 ? {} : OFFLINE) },
+      { request: pad([0x00, 0xd2], 65), parse: (f) => (f.length < 2 || f[0] !== 0xd2 ? null : aeroxBattery(f)) },
+    ],
+  },
+  {
+    name: 'SteelSeries Apex Pro TKL Wireless (cable)', kind: 'keyboard', wired: true, vendorId: STEELSERIES, productIds: [0x1646],
+    channel: { usagePage: 0xffc0, usage: 0x01, interface: 3 },
+    steps: [{ request: pad([0x00, 0x92], 65), parse: (f) => (f.length < 2 || f[0] !== 0x92 ? null : aeroxBattery(f)) }],
   },
 
   // Mice
