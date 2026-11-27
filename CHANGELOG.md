@@ -52,6 +52,11 @@ All notable changes to this project are documented here. Versions follow
   showing a false low level; the Arctis GameBuds count only buds out of the case; a Pulsar Fusion2 dongle with no mouse
   shows as off; WLmouse's other "ready" answer is accepted; the Rival 650 on its cable and an INZONE headset that
   refuses the request are no longer shown as off.
+- Faster and lighter: the app keeps its saved data in memory instead of re-reading and re-writing the whole file
+  many times a check; devices that answered last time are read first, so a silent one no longer holds the others up;
+  Refresh reads devices while the Windows and Bluetooth scan runs; reads of one device never overlap; a device handle
+  is never closed while a read on it may still be running; the tray in list mode is redrawn only when something
+  changed; and the Bluetooth LE reader never runs twice at once and, on its timer, asks only the devices you added.
 - Razer BlackWidow V3 Pro on its cable: asked with the transaction id OpenRazer uses for it (0x3f, not 0xff).
 - MCHOSE V9 PRO: read while charging or full, and "asleep"; only a headset on battery was read (issues #43, #250).
 - Corsair Slipstream receiver (issue #46): asked in OpenLinkHub's framing, which its replies fit, with the old framing

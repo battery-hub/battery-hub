@@ -32,17 +32,23 @@ let watcher = null;
 let latest = new Map(); // id -> { id, name, kind, capacity, connected }
 let ble = new Map();    // the same, from the Bluetooth LE reader
 let bleTimer = null;
+let bleOnly = null;     // the MACs the saved cards read directly; the timer reads only those
+let bleRun = null;      // the reader that's running, so a scan and the timer never start two
 
-function readBle() {
-  return new Promise((resolve) => {
+// only: a list of MACs to read, or null for every paired LE device without a Windows level (Add device).
+function readBle(only = null) {
+  if (bleRun) return bleRun;
+  bleRun = new Promise((resolve) => {
     if (process.platform !== 'win32' || !fs.existsSync(BLE_PROGRAM)) { resolve([]); return; }
-    execFile(BLE_PROGRAM, [], { windowsHide: true, timeout: BLE_TIMEOUT_MS, encoding: 'utf8' }, (err, stdout) => {
+    const args = only ? ['--only', only.join(',')] : [];
+    execFile(BLE_PROGRAM, args, { windowsHide: true, timeout: BLE_TIMEOUT_MS, encoding: 'utf8' }, (err, stdout) => {
       const list = err ? null : parseScan(String(stdout).trim().split(/\r?\n/).pop());
       // A device that didn't answer this time (asleep) keeps its last level until it does.
       if (list) for (const d of list) ble.set(d.id, { ...d, seenAt: Date.now() });
       resolve(list || []);
     });
-  });
+  }).finally(() => { bleRun = null; });
+  return bleRun;
 }
 let seenAt = 0;
 
@@ -88,13 +94,20 @@ async function selfTest() {
   return list ? { ok: true, count: list.length } : { ok: false, error };
 }
 
-// opts.ble: a saved card reads a Bluetooth LE device directly, so the slower LE reader runs too.
+// opts.ble: the MACs of the Bluetooth LE devices saved cards read directly (or true for all), so the
+// slower LE reader runs too, for those only.
 function startWatching(opts = {}) {
   if (process.platform !== 'win32') return;
-  if (opts.ble && !bleTimer) {
-    readBle();
-    bleTimer = setInterval(readBle, BLE_EVERY_MS);
-  } else if (!opts.ble && bleTimer) {
+  const wanted = Array.isArray(opts.ble) ? opts.ble : null;
+  if (opts.ble && (!Array.isArray(opts.ble) || opts.ble.length)) {
+    const changed = String(bleOnly) !== String(wanted);
+    bleOnly = wanted;
+    if (!bleTimer || changed) {
+      if (bleTimer) clearInterval(bleTimer);
+      readBle(bleOnly);
+      bleTimer = setInterval(() => readBle(bleOnly), BLE_EVERY_MS);
+    }
+  } else if (bleTimer) {
     clearInterval(bleTimer);
     bleTimer = null;
   }

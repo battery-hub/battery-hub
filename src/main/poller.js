@@ -279,8 +279,11 @@ async function pollAllDevices(onUpdate, only = null) {
   await reconcile(live);
   const saved = store.getDevices();
   const usesWindows = Object.values(saved).some((c) => !c.hidden && routesOf(c).some((r) => system.isSystemId(r.id)));
-  const usesBle = Object.values(saved).some((c) => !c.hidden && routesOf(c).some((r) => /^ble:/.test(r.id)));
-  if (usesWindows) system.startWatching({ ble: usesBle });
+  // The Bluetooth LE devices saved cards read directly: only those are asked on the reader's timer.
+  const bleMacs = [...new Set(Object.values(saved).filter((c) => !c.hidden)
+    .flatMap((c) => routesOf(c).map((r) => (/^ble:([0-9A-F]{12})$/i.exec(r.id) || [])[1]).filter(Boolean)))]
+    .map((mac) => mac.toUpperCase()).sort();
+  if (usesWindows) system.startWatching({ ble: bleMacs });
   else system.stopWatching();
   let rescannedThisPoll = false; // force at most one fresh USB scan per poll
   const napping = [];
