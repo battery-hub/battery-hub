@@ -107,6 +107,23 @@ function bragiStep(prefix, target, property, parse) {
 }
 const bragiBattery = (value) => (value >= 1 && value <= 1000 ? { capacity: clampPercent(Math.round(value / 10)) } : null);
 
+// OpenLinkHub's framing for Corsair mouse and keyboard dongles and for those devices on their cable
+// (slipstream, k65plusWdongle and the *WU packages: transfer(), getBatterLevel()): 00 <target> 02
+// <property>, 65 bytes; the reply is <source> 02 <error> <value lo> <value hi>. HaloBattery checked it
+// on hardware: 01 02 00 e8 03 = 100 % on a K65 PLUS dongle, 01 02 00 26 02 = 55 % on a Dark Core RGB
+// Pro SE. Error 5 = nothing behind the receiver. It differs from the headset framing (bragiStep), whose
+// replies these devices' captures don't fit, so the headset framing stays only as a fallback.
+function olhStep(target, property, parse) {
+  return {
+    request: pad([0x00, target, BRAGI_GET, property], 65),
+    parse(f) {
+      if (f.length < 5 || (f[0] !== 0x00 && f[0] !== 0x01) || f[1] !== BRAGI_GET) return null;
+      if (f[2] === 0x05) return OFFLINE;
+      return f[2] === 0x00 ? parse(f[3] | (f[4] << 8)) : null;
+    },
+  };
+}
+
 function alphaStep(command, parse) {
   return {
     request: pad([0x21, 0xbb, command], 31),
@@ -263,16 +280,43 @@ const DEVICES = [
     ],
   },
   {
-    // The Slipstream receiver (issue #46) relays to its mouse or keyboard over the same Bragi
-    // properties, with the same collections. OpenLinkHub (src/devices/slipstream) puts a single
-    // paired device at 0x09; with several paired, this reads the first one only.
+    // Slipstream receivers (issue #46) relay to the mouse or keyboard behind them (target 0x09). With
+    // several paired, this reads the first one only. 1b7f (Dark Core RGB Pro SE) and 1ba6 were checked
+    // on hardware by HaloBattery; 1b81, 1b66, 1b65, 2b00 and 1b94 are the same dongles in ckb-next and
+    // OpenLinkHub's tables.
     name: 'Corsair Slipstream receiver', kind: 'mouse', vendorId: 0x1b1c,
-    productIds: [0x1bdc],
+    productIds: [0x1bdc, 0x1b7f, 0x1ba6, 0x1b81, 0x1b66, 0x1b65, 0x2b00, 0x1b94],
     channel: { usagePage: 0xff42 },
-    steps: [
+    steps: [olhStep(BRAGI_HEADSET, 0x0f, bragiBattery)],
+    fallbackSteps: [
       bragiStep([0x00], BRAGI_RECEIVER, 0x12, () => ({})),
       bragiStep([0x00], BRAGI_HEADSET, 0x0f, bragiBattery),
     ],
+  },
+  {
+    // The K65 PLUS Wireless dongle (HaloBattery #154, on hardware: 01 02 00 e8 03 = 100 %).
+    name: 'Corsair K65 PLUS Wireless (dongle)', kind: 'keyboard', vendorId: 0x1b1c, productIds: [0x2b07],
+    channel: { usagePage: 0xff42 },
+    steps: [olhStep(BRAGI_HEADSET, 0x0f, bragiBattery)],
+  },
+  {
+    // Corsair wireless mice on their cable answer for themselves (target 0x08): OpenLinkHub's *WU
+    // packages (m75WU and others). 1bb5 (M65 RGB Ultra Wireless) is checked on hardware by
+    // HaloBattery #411; the others are the same packages in OpenLinkHub and ckb-next.
+    name: 'Corsair wireless mice (cable)', kind: 'mouse', wired: true, vendorId: 0x1b1c,
+    productIds: [0x1bb5, 0x1bd6, 0x1b80, 0x1b7e, 0x1b4c, 0x1b5e, 0x1bb8, 0x1bdb, 0x2b22, 0x1bf1, 0x2b08, 0x1bf2, 0x1bb2, 0x2b32, 0x2b2e, 0x2b1c, 0x1b98],
+    channel: { usagePage: 0xff42 },
+    steps: [olhStep(BRAGI_RECEIVER, 0x0f, bragiBattery)],
+    fallbackSteps: [bragiStep([0x00], BRAGI_RECEIVER, 0x0f, bragiBattery)],
+  },
+  {
+    // Corsair wireless keyboards on their cable (OpenLinkHub k70coretklWU, k100airWU, k70pmWU and
+    // the K65 PLUS, MAKR 75 and VANGUARD packages): target 0x08.
+    name: 'Corsair wireless keyboards (cable)', kind: 'keyboard', wired: true, vendorId: 0x1b1c,
+    productIds: [0x2b02, 0x2b10, 0x2b11, 0x2b23, 0x1bab, 0x1bb6, 0x2b04, 0x2b0f, 0x2b21],
+    channel: { usagePage: 0xff42 },
+    steps: [olhStep(BRAGI_RECEIVER, 0x0f, bragiBattery)],
+    fallbackSteps: [bragiStep([0x00], BRAGI_RECEIVER, 0x0f, bragiBattery)],
   },
   {
     // 0x0a40 is a Virtuoso SE receiver HeadsetControl doesn't list yet (issue #99); its scan shows
@@ -447,6 +491,17 @@ const DEVICES = [
     steps: [bragiStep([0x00], BRAGI_RECEIVER, 0x0f, bragiBattery)],
   },
   {
+    // The AULA F108 Pro's dongle uses Apple's vendor id (05ac:024f, issue #81), so it is matched on
+    // its name. Same request and reply as the AULA receiver below (HaloBattery aula_f108.py, from
+    // meitar/aula-driver; on Windows the reply 00 20 01 00 21 came when the keyboard showed 33 %).
+    name: 'AULA F108 Pro (dongle)', kind: 'keyboard', vendorId: 0x05ac, productIds: [0x024f], product: /F108\s*Pro/i,
+    channel: { usagePage: 0xff60, usage: 0x61 },
+    steps: [{
+      request: [0,32,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,33],
+      parse: (f) => (f.length >= 4 && f[0] === 0x20 && f[1] === 0x01 && f[2] === 0x00 && f[3] >= 1 && f[3] <= 100 ? { capacity: f[3] } : null),
+    }],
+  },
+  {
     // AULA and EWEADN keyboards on their SONiX 2.4G receiver 0c45:fefe (issues #109, #160 asked on the
     // cable, which has no battery command), as AulaToolkit and vigil-watt read them (checked on an X87):
     // output report 0, 20 01 and a last byte that sums the 31 before it; reply 20 01 00 <percent>.
@@ -550,8 +605,13 @@ const DEVICES = [
   },
 ];
 
+// An entry with `product` (a regex on the HID product string) only claims a device whose name fits:
+// for ids a maker shares between products, or borrows from another company (Apple's 05ac).
+// Such entries come before any entry for the same ids without one.
 function find(logicalDevice) {
-  return DEVICES.find((d) => d.vendorId === logicalDevice.vendorId && d.productIds.includes(logicalDevice.productId)) || null;
+  const name = String(logicalDevice.product || '');
+  return DEVICES.find((d) => d.vendorId === logicalDevice.vendorId && d.productIds.includes(logicalDevice.productId)
+    && (!d.product || d.product.test(name))) || null;
 }
 
 module.exports = { DEVICES, find };

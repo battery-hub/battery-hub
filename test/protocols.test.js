@@ -29,7 +29,7 @@ test('no product id is claimed twice in the device table', () => {
   const seen = new Set();
   for (const d of table.DEVICES) {
     for (const pid of d.productIds) {
-      const key = `${d.vendorId}:${pid}`;
+      const key = `${d.vendorId}:${pid}:${d.product || ''}`;
       assert.ok(!seen.has(key), key);
       seen.add(key);
     }
@@ -39,7 +39,11 @@ test('no product id is claimed twice in the device table', () => {
 test('every table entry has a request to send and a parser', () => {
   for (const d of table.DEVICES) {
     assert.ok(d.steps.length > 0 && d.kind, d.name);
-    for (const step of d.steps) assert.ok(step.request.length > 0 && typeof step.parse === 'function', d.name);
+    for (const step of [...d.steps, ...(d.fallbackSteps || [])]) {
+      // A feature step may only read (getFeatureReport), with nothing to send first.
+      const sends = typeof step.request === 'function' || (step.request && step.request.length > 0);
+      assert.ok((sends || step.via === 'feature') && typeof step.parse === 'function', d.name);
+    }
   }
 });
 

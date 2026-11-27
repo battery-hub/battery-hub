@@ -8,6 +8,9 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Corsair: more Slipstream dongles (Dark Core RGB Pro and Pro SE, Ironclaw, Harpoon, Katar Pro), the K65 PLUS dongle, and
+  wireless mice and keyboards on their cable, in OpenLinkHub's framing (HaloBattery checked it on hardware).
+- AULA F108 Pro on its dongle, which uses Apple's vendor id (issue #81).
 - Controllers, as SDL and Linux read them: Flydigi Vader 4/5 Pro and Apex 4/5/6 (issues #25, #125), 8BitDo Ultimate 2
   and Ultimate 3, both Steam Controllers, the NVIDIA SHIELD controller, Amazon Luna over Bluetooth and SInput pads.
 - Reports without a GitHub account: a device report, an "it works" or a support request can be sent from the app, and
@@ -16,6 +19,8 @@ All notable changes to this project are documented here. Versions follow
 
 ### Fixed
 
+- Corsair Slipstream receiver (issue #46): asked in OpenLinkHub's framing, which its replies fit, with the old framing
+  kept as a fallback.
 - VSG Aquila Fly and Redragon M913 receivers (25a7:fa3f, fa07) showed a tenth of the level (6% for 60%), and a full
   mouse on its cable stayed "Charging", so the fully charged alert never came (issue #224).
 
