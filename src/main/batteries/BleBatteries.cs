@@ -112,8 +112,12 @@ static class Program
         Console.OutputEncoding = new UTF8Encoding(false);
         var found = new List<string>();
         var seen = new HashSet<string>();
+        // The app stops this after 60 s; stop at 45 s so what was read still gets printed. Devices that
+        // are paired but away take seconds each.
+        var stopAt = DateTime.UtcNow.AddSeconds(45);
         foreach (string id in Ids())
         {
+            if (DateTime.UtcNow > stopAt) break;
             var m = System.Text.RegularExpressions.Regex.Match(id, @"^BTHLE\\DEV_([0-9A-F]{12})\\", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (!m.Success) continue;
             string mac = m.Groups[1].Value.ToUpperInvariant();

@@ -744,7 +744,7 @@ const DEVICES = [
   {
     // Corsair Void Wireless v2 on its cable (1b1c:2a09, issue #106): wired Bragi devices answer as
     // the receiver target (OpenLinkHub, hs80rgbWU).
-    name: 'Corsair Void Wireless v2 (cable)', kind: 'headset', vendorId: 0x1b1c, productIds: [0x2a09],
+    name: 'Corsair Void Wireless v2 (cable)', kind: 'headset', wired: true, vendorId: 0x1b1c, productIds: [0x2a09],
     channel: { usagePage: 0xff42 },
     steps: [bragiStep([0x00], BRAGI_RECEIVER, 0x0f, bragiBattery)],
   },

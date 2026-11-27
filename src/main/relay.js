@@ -7,6 +7,7 @@ const REPO = 'battery-hub/battery-hub';
 const TIMEOUT_MS = 15000;
 const KEEP_DAYS = 120; // a report this old leaves the list
 const OWN_REPLY = /^\*\*From the person who sent this report\*\*/;
+const RELAY_APP = 'battery-hub-relay';
 
 const available = () => !!RELAY_URL;
 
@@ -50,12 +51,16 @@ function create(store) {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!response.ok) throw new Error(`GitHub answered ${response.status}`);
-    return (await response.json()).map((c) => ({
-      author: OWN_REPLY.test(c.body) ? 'You' : (c.user && c.user.login) || 'GitHub',
-      mine: OWN_REPLY.test(c.body),
-      body: String(c.body || '').replace(OWN_REPLY, '').trim(),
-      at: c.created_at,
-    }));
+    return (await response.json()).map((c) => {
+      // Anyone can write that prefix in a public comment: only the relay's own GitHub App speaks for them.
+      const mine = OWN_REPLY.test(c.body) && !!c.performed_via_github_app && c.performed_via_github_app.slug === RELAY_APP;
+      return {
+        author: mine ? 'You' : (c.user && c.user.login) || 'GitHub',
+        mine,
+        body: mine ? String(c.body || '').replace(OWN_REPLY, '').trim() : String(c.body || '').trim(),
+        at: c.created_at,
+      };
+    });
   }
 
   // Every report with its replies, for the Your reports list. Opening it marks them read.

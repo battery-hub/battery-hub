@@ -25,7 +25,8 @@ function matches(logicalDevice) {
 
 function parseReply(f) {
   if (f.length < 10 || f[0] !== 0x04 || f[3] !== 0x1a) return null;
-  if (f[8] === 0 || f[8] > 100) return { offline: true };
+  if (f[8] > 100) return null; // not a level: keep waiting
+  if (f[8] === 0) return { offline: true };
   return { capacity: f[8], charging: f[9] === 1 };
 }
 

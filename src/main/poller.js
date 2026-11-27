@@ -273,7 +273,8 @@ async function pollAllDevices(onUpdate, only = null) {
   await reconcile(live);
   const saved = store.getDevices();
   const usesWindows = Object.values(saved).some((c) => !c.hidden && routesOf(c).some((r) => system.isSystemId(r.id)));
-  if (usesWindows) system.startWatching();
+  const usesBle = Object.values(saved).some((c) => !c.hidden && routesOf(c).some((r) => /^ble:/.test(r.id)));
+  if (usesWindows) system.startWatching({ ble: usesBle });
   else system.stopWatching();
   let rescannedThisPoll = false; // force at most one fresh USB scan per poll
   const napping = [];

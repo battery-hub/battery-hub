@@ -29,7 +29,7 @@ async function appToken(env) {
   const der = Uint8Array.from(atob(pem), (c) => c.charCodeAt(0));
   const key = await crypto.subtle.importKey('pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
   const now = Math.floor(Date.now() / 1000);
-  const unsigned = `${b64urlText(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))}.${b64urlText(JSON.stringify({ iat: now - 60, exp: now + 540, iss: env.APP_ID }))}`;
+  const unsigned = `${b64urlText(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))}.${b64urlText(JSON.stringify({ iat: now - 60, exp: now + 540, iss: Number(env.APP_ID) }))}`;
   const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsigned));
   const response = await fetch(`https://api.github.com/app/installations/${env.INSTALLATION_ID}/access_tokens`, {
     method: 'POST',
@@ -70,7 +70,7 @@ async function overLimit(env, request, kind) {
 async function readJson(request) {
   const text = await request.text();
   if (text.length > MAX_REQUEST_BYTES) throw new Error('report too long');
-  return JSON.parse(text);
+  try { return JSON.parse(text); } catch (e) { throw new Error('bad request'); }
 }
 
 export default {

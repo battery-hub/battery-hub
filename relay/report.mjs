@@ -57,7 +57,8 @@ export function buildIssue(input) {
   const parts = [];
   for (const [id, label, render] of template.fields) {
     const value = clean(fields[id], LIMITS.field);
-    const shown = !value ? '_No response_' : render ? `\`\`\`${render}\n${value.replace(/```/g, "'''")}\n\`\`\`` : value;
+    // A heading inside a plain field would read as another form section, so it is escaped.
+    const shown = !value ? '_No response_' : render ? `\`\`\`${render}\n${value.replace(/```/g, "'''")}\n\`\`\`` : value.replace(/^(\s{0,3})#/gm, '$1\\#');
     parts.push(`### ${label}\n\n${shown}`);
   }
   parts.push('---\n_Sent from the Battery Hub app by someone without a GitHub account. They read the replies here in the app, and can answer from it._');

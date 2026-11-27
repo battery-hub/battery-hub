@@ -83,7 +83,7 @@ let shieldSeq = 0;
 const shieldRequest = () => [0x04, 0x07, (shieldSeq = (shieldSeq + 1) & 0xff)];
 function parseShield(f) {
   if (f.length < 6 || f[0] !== 0x03 || f[1] !== 0x07 || f[5] > 5) return null;
-  return f[5] === 0 ? null : { capacity: f[5] * 20 };
+  return { capacity: f[5] * 20 }; // SDL maps level 0 to 0 %
 }
 
 // ---- Amazon Luna over Bluetooth: report 4, f[1] 0-255.
@@ -93,8 +93,11 @@ function parseLuna(f) {
 }
 
 // ---- SInput: report 1, f[1] plug state (2 charging, 3 charged, 4 on battery), f[2] percent.
+// Status 3 is "charged", which SDL shows as 100 whatever byte 2 says.
 function parseSInput(f) {
-  if (f.length < 3 || f[0] !== 0x01 || ![2, 3, 4].includes(f[1]) || f[2] < 1 || f[2] > 100) return null;
+  if (f.length < 3 || f[0] !== 0x01 || ![2, 3, 4].includes(f[1])) return null;
+  if (f[1] === 3) return { capacity: 100, charging: false };
+  if (f[2] < 1 || f[2] > 100) return null;
   return { capacity: f[2], charging: f[1] === 2 };
 }
 const SINPUT = new Set(['2e8a:10c6', '2e8a:10df', '2e8a:10dd', '2e8a:10e0', '2e8a:10e5', '38d2:1014']);
