@@ -6,6 +6,12 @@ All notable changes to this project are documented here. Versions follow
 
 ## [Unreleased]
 
+### Added
+
+- Reports without a GitHub account: a device report, an "it works" or a support request can be sent from the app, and
+  the replies show up in Settings → Help → Your reports, where they can be answered, with a notification for each
+  new one. It goes through a small relay (relay/), and stays hidden until the relay is set up.
+
 ### Fixed
 
 - VSG Aquila Fly and Redragon M913 receivers (25a7:fa3f, fa07) showed a tenth of the level (6% for 60%), and a full

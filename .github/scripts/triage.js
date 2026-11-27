@@ -15,6 +15,7 @@ const LABELS = {
   cant: { name: "can't support", color: 'b60205', description: "The device doesn't share its battery level, so it can't be read" },
   works: { name: 'works', color: '0e8a16', description: 'Someone confirmed Battery Hub reads this device' },
   supported: { name: 'supported', color: '1d76db', description: 'Battery Hub reads this device now; waiting for someone to confirm' },
+  fromApp: { name: 'from-app', color: 'c5def5', description: 'Sent from the app by someone without a GitHub account; they answer from the app' },
   board: { name: BOARD_LABEL, color: '5319e7', description: 'The list of requested devices' },
 };
 const NO_ANSWER = /^_?no response_?$|^(unknown|n\/a|none|-|\?+|no se|不知道)$/i;
