@@ -8,6 +8,8 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Controllers, as SDL and Linux read them: Flydigi Vader 4/5 Pro and Apex 4/5/6 (issues #25, #125), 8BitDo Ultimate 2
+  and Ultimate 3, both Steam Controllers, the NVIDIA SHIELD controller, Amazon Luna over Bluetooth and SInput pads.
 - Reports without a GitHub account: a device report, an "it works" or a support request can be sent from the app, and
   the replies show up in Settings → Help → Your reports, where they can be answered, with a notification for each
   new one. It goes through a small relay (relay/), and stays hidden until the relay is set up.
