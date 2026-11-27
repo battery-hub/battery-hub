@@ -45,10 +45,15 @@ const channelOf = (logicalDevice) => logicalDevice.channels.find((c) => c.usageP
 // mchose_kb.py from MCHOSE's M HUB, #378 on hardware: 94 % on battery, 50 % charging on the cable).
 const MCHOSE_KB = 0x41e4;
 const MCHOSE_KB_PRODUCTS = new Set([0x2001, 0x2004]);
+// VGN's "beiying" keyboard dongles, in its web driver with the same report 0x13 and 4A query: N75 V2
+// 391d:2a01, V108 391d:2a02, V87 V2 258a:027b, V98pro V3 258a:024f / 027f. Only these ids: 258a is
+// SinoWealth's, and other keyboards under it take flash writes on their command channel.
+const VGN_KB = new Set(['391d:2a01', '391d:2a02', '258a:027b', '258a:024f', '258a:027f']);
 
 function matches(logicalDevice) {
   const { vendorId, productId } = logicalDevice;
-  const known = (vendorId === VENDOR && productId === PRODUCT) || (vendorId === MCHOSE_KB && MCHOSE_KB_PRODUCTS.has(productId));
+  const id = `${(vendorId || 0).toString(16).padStart(4, '0')}:${(productId || 0).toString(16).padStart(4, '0')}`;
+  const known = (vendorId === VENDOR && productId === PRODUCT) || (vendorId === MCHOSE_KB && MCHOSE_KB_PRODUCTS.has(productId)) || VGN_KB.has(id);
   return known && !!channelOf(logicalDevice);
 }
 

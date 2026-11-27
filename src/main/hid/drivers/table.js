@@ -332,6 +332,24 @@ function asusMice() {
   return entries;
 }
 
+function vgnKing() {
+  return {
+    request: pad([0x20, 0x11, 0x00, 0x28, 0x01, 0x00, 0x01, 0x00, 0x08], 64),
+    parse: (f) => (f.length < 18 || f[0] !== 0x20 || f[8] !== 0x08 || f[17] < 1 || f[17] > 100 ? null : { capacity: f[17] }),
+  };
+}
+
+function pulsarFusion2(register, parse) {
+  const request = new Array(65).fill(0);
+  request[2] = 0x08; request[3] = register; request[4] = 0x01;
+  const sum = request.slice(1, 63).reduce((a, b) => a + b, 0);
+  request[63] = sum & 0xff; request[64] = sum >> 8;
+  return {
+    via: 'feature', request, reportId: 0x00, length: 65, wait: 20, tries: 50,
+    parse: (f) => (f.length < 8 || f[1] !== 0x01 || f[2] !== 0x08 || f[3] !== register ? null : parse(f[7])),
+  };
+}
+
 const DEVICES = [
   // Headsets
   {
@@ -774,7 +792,9 @@ const DEVICES = [
     // ATK X1 NearLink (issue #129), from ATK's web driver (v3-hub.atkgear.com, the Evision mouse
     // class, isEvisionWireless 0x108b/0x108c): report 5, <request code lo hi> 1a = power info. The
     // reply starts with the same request code; data from byte 7 holds the level, then charging.
-    name: 'ATK X1 NearLink', kind: 'mouse', vendorId: 0x373b, productIds: [0x108b, 0x108c],
+    // ATK's hub reads the same power info for its other NearLink devices: the 8K NearLink dongle 1179,
+    // A9 Ultimate NearLink 11b5, F1 NearLink 1156 (vendor driver, not hardware-confirmed).
+    name: 'ATK X1 NearLink', kind: 'mouse', vendorId: 0x373b, productIds: [0x108b, 0x108c, 0x1179, 0x11b5, 0x1156],
     channel: [{ usagePage: 0xffb1 }, { usagePage: 0xffb2 }],
     steps: [{
       request: pad([0x05, 0x01, 0x00, 0x1a], 64),
@@ -782,12 +802,15 @@ const DEVICES = [
         : f[8] === 0 || f[8] > 100 ? OFFLINE : { capacity: f[8], charging: f[9] > 0 }),
     }],
   },
-  ...[[0x3434, 'Keychron Ultra-Link 8K'], [0x362d, 'SKN Ultra-Link 8K']].map(([vendorId, name]) => ({
+  ...[[0x3434, 'Keychron Ultra-Link 8K', [0xd028]], [0x362d, 'SKN Ultra-Link 8K', [0xd028]],
+    // VGN's "vgn-kc2" mice read the same b3 06 (its web driver; vendor driver decoded): cables and receivers.
+    [0x391d, 'VGN (Keychron platform)', [0x103c, 0x103d, 0x1045, 0x1023, 0x1024, 0x1042, 0x1043, 0x1025, 0x1026, 0x1a35, 0x1a36, 0x1a3e, 0x1a20, 0x1a21, 0x1a3b, 0x1a3c, 0x1a22, 0x1a23]],
+  ].map(([vendorId, name, productIds]) => ({
     // Keychron's 8K receiver, also sold under Keychron's SKN brand (issue #164). From the Linux
     // keychron-battery-dkms module and HaloBattery issue #373, checked there on a real M6 8K:
     // output report b3 06 on 0xFFC1, the reply b4 06 ... holds level | 0x80 (charging) at byte 20.
     // Windows refuses it as a feature report. Keyboards behind the receiver may not answer.
-    name, kind: 'mouse', vendorId, productIds: [0xd028],
+    name, kind: 'mouse', vendorId, productIds,
     channel: { usagePage: 0xffc1, usage: 0x01 },
     steps: [{
       request: pad([0xb3, 0x06], 64),
@@ -1073,6 +1096,71 @@ const DEVICES = [
   },
 
   // Mice
+  {
+    // ATK "Hechi" mice (ATK's web hub, class Fr; vendor driver decoded, not hardware-confirmed): output
+    // report 0B. 0B 14 asks if the mouse is awake (byte 4 = 0: asleep or off), 0B 13 for its info: byte 17
+    // charging, 18 the level. ATK A9 PRO MAX 1147, its 1K dongle 1148 and 8K dongle 1196.
+    name: 'ATK A9 PRO MAX (Hechi)', kind: 'mouse', vendorId: 0x373b, productIds: [0x1147, 0x1148, 0x1196],
+    channel: { usagePage: 0xffa0, usage: 0x02 },
+    steps: [
+      { request: pad([0x0b, 0x14], 64), parse: (f) => (f.length < 5 || f[0] !== 0x0b || f[1] !== 0x14 ? null : f[4] === 0 ? OFFLINE : {}) },
+      { request: pad([0x0b, 0x13], 64), parse: (f) => (f.length < 19 || f[0] !== 0x0b || f[1] !== 0x13 || f[18] < 1 || f[18] > 100 ? null : { capacity: f[18], charging: f[17] === 1 }) },
+    ],
+  },
+  {
+    // ATK "Waizowl" mice (ATK's web hub, class Qr; vendor driver decoded, not hardware-confirmed): report
+    // 2, 0E 81 01 = get control data; byte 5 the level, 6 the state (1 charging, 2 asleep or not linked).
+    // The same layout comes pushed as report 6. ATK Duckbill ELITE 1282, its 8K dongle 1283.
+    name: 'ATK Duckbill ELITE (Waizowl)', kind: 'mouse', vendorId: 0x373b, productIds: [0x1282, 0x1283],
+    channel: { usagePage: 0xff02, usage: 0x02 },
+    steps: [{
+      request: pad([0x02, 0x0e, 0x81, 0x01], 64),
+      parse: (f) => (f.length < 7 || (f[0] !== 0x02 && f[0] !== 0x06) || f[2] !== 0x81 || f[3] !== 0x01 ? null
+        : f[6] === 2 ? OFFLINE : f[5] < 1 || f[5] > 100 ? null : { capacity: f[5], charging: f[6] === 1 }),
+    }],
+  },
+  {
+    // MCHOSE's newer mice (M HUB newMouseFilters; vendor driver decoded, MyFinder implements it, not
+    // hardware-confirmed): output report 4D 01 01 00 00 09 00 00 08 = read device info; the reply echoes
+    // 00 09 at 4-5, byte 19 charge state, 20 the level (0 = not linked), FF at 8 = not ready yet.
+    name: 'MCHOSE A5 V3, A7 V3, K7 V2, R7 Ultra, V7 Pro, G3 V3', kind: 'mouse', vendorId: 0x3837,
+    productIds: [0x1014, 0x1016, 0x1018, 0x101c, 0x101d, 0x4026, 0x4027, 0x4028, 0x4029, 0x402a, 0x4030, 0x4031, 0x4032, 0x4033, 0x4034, 0x4035, 0x4037, 0x4038, 0x403a, 0x403b, 0x403d, 0x403e, 0x4041],
+    channel: [{ usagePage: 0xff01 }, { usagePage: 0xff0b }],
+    steps: [{
+      request: pad([0x4d, 0x01, 0x01, 0x00, 0x00, 0x09, 0x00, 0x00, 0x08], 64),
+      parse: (f) => (f.length < 21 || f[0] !== 0x4d || f[4] !== 0x00 || f[5] !== 0x09 || f[8] === 0xff ? null
+        : f[20] === 0 ? OFFLINE : f[20] > 100 ? null : { capacity: f[20], charging: f[19] === 1 }),
+    }],
+  },
+  {
+    // VGN "ldMs" mice (VGN's web driver, class Wr; vendor driver decoded, not hardware-confirmed): report
+    // A0, A0 02 25 = power, level at byte 3. Dragonfly F1 V2 Extreme 101b / receiver 1a18, Falcon3 Extreme
+    // 102e / 1a2a, Falcon3 Extreme+ 1037 / 1a29.
+    name: 'VGN Dragonfly F1 V2 Extreme, Falcon3 Extreme', kind: 'mouse', vendorId: 0x391d, productIds: [0x101b, 0x1a18, 0x102e, 0x1a2a, 0x1037, 0x1a29],
+    channel: { usagePage: 0xffa0, usage: 0x02 },
+    steps: [{ request: pad([0xa0, 0x02, 0x25], 33), parse: (f) => (f.length < 4 || f[0] !== 0xa0 || f[1] !== 0x02 || f[2] !== 0x25 || f[3] < 1 || f[3] > 100 ? null : { capacity: f[3] }) }],
+  },
+  {
+    // VGN "king" mice (VGN's web driver, class Zd; vendor driver decoded, not hardware-confirmed): report
+    // 0x20 with the user-config read 08; the reply echoes 08 at byte 8, the level at 17.
+    name: 'VGN (king)', kind: 'mouse', vendorId: 0x372e, productIds: [0x10ac, 0x10ad],
+    channel: { usagePage: 0xff10, usage: 0x10 },
+    steps: [vgnKing()],
+  },
+  {
+    name: 'VGN (king)', kind: 'mouse', vendorId: 0x9981, productIds: [0x6002, 0x7002],
+    channel: { usagePage: 0xff10, usage: 0x10 },
+    steps: [vgnKing()],
+  },
+  {
+    // Pulsar's Sonix "Fusion2" dongles and mice (pulsar-mouse-linux feinmann8k.py, xlite_v4_wireless.py,
+    // fusion2_8k_dongle.py, x3.py; on hardware: dongle 88 %, X3 on its cable 87 % and charging): feature
+    // report 0 on interface 3, register 08/81 read with a 16-bit sum at the end; level at byte 6 (7 with
+    // the report id), FF = the dongle has no mouse; register 83 gives charging.
+    name: 'Pulsar Xlite V4, X3, Feinmann (Fusion2)', kind: 'mouse', vendorId: 0x3710, productIds: [0x5402, 0x5403, 0x5404, 0x3401, 0x3409, 0x3410],
+    channel: { interface: 3 },
+    steps: [pulsarFusion2(0x81, (v) => (v === 0xff ? OFFLINE : v >= 1 && v <= 100 ? { capacity: v } : null)), pulsarFusion2(0x83, (v) => ({ charging: v === 1 }))],
+  },
   {
     // Zebronics' Compx receiver 3554:fc0a doesn't speak the VXE frame: it keeps the level in feature
     // report 6, 06 00 02 00 <counter> <percent> 14 80 (TaskbarVitals zebronics.cpp, a local capture).

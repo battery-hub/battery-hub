@@ -31,7 +31,7 @@ const hasLayout = (d) => d.channels.some((c) => c.usagePage === 0xffa0) && d.cha
 const FFFF_ONLY_VENDORS = new Set([0x36a7]);
 const FFFF_ONLY_PRODUCTS = new Set(['373e:0047']);
 const ffffOnly = (d) => FFFF_ONLY_VENDORS.has(d.vendorId)
-  || FFFF_ONLY_PRODUCTS.has(`${d.vendorId.toString(16)}:${d.productId.toString(16).padStart(4, '0')}`);
+  || FFFF_ONLY_PRODUCTS.has(`${(d.vendorId || 0).toString(16)}:${(d.productId || 0).toString(16).padStart(4, '0')}`);
 // The 64-byte feature report lives on a 0xFFFF collection (mxw opens interface 2).
 const channelsOf = (d) => d.channels.filter((c) => c.usagePage === 0xffff || (isGlorious(d) && c.interface === 2))
   .sort((a, b) => (b.interface === 2) - (a.interface === 2));

@@ -116,8 +116,8 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | JBL | Quantum 810, Quantum 910 |
 | Lenovo | Wireless VoIP Headset |
 | FIFINE | HT6 |
-| MCHOSE | V9 Turbo+, V9 PRO, V9 Pro 2, X9 headsets; A7 V2 Ultra, A7 V2 Pro, A5 Ultra, K7 Ultra, A7 Ultra, G3 A mice; G75 V2, G87 V2, K87S, K99 V3, K87, G98 Pro keyboards |
-| VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers; ATK NearLink and BitMouse receivers, X1 NearLink; ATK 8K Nano and 1K/8K dongles; Pulsar 8K Dongle Gen.2 and CrazyLight mice, G-Wolves 8K receiver, Endgame Gear XM2we, iRocks M31R, Zebronics receiver |
+| MCHOSE | V9 Turbo+, V9 PRO, V9 Pro 2, X9 headsets; A7 V2 Ultra, A7 V2 Pro, A5 Ultra, K7 Ultra, A7 Ultra, G3 A mice; G75 V2, G87 V2, K87S, K99 V3, K87, G98 Pro keyboards; A5 V3, A7 V3, A7X Ultra, K7 V2, R7 Ultra, V7 Pro, G3 V3, G3 Ultra and A5 V2 Ultra mice |
+| VXE, ATK, MADLIONS | Dragonfly R1 Pro, NordicMouse and other mice on Compx receivers; ATK NearLink and BitMouse receivers, X1 NearLink; ATK 8K Nano and 1K/8K dongles; Pulsar 8K Dongle Gen.2 and CrazyLight mice, Pulsar Xlite V4, X3 and Feinmann (Fusion2), G-Wolves 8K receiver, Endgame Gear XM2we, ATK A9 PRO MAX and Duckbill ELITE, ATK NearLink 8K dongle, A9 Ultimate and F1 NearLink, iRocks M31R, Zebronics receiver |
 | Glorious, LAMZU | Model O, O-, D, D- Wireless; Maya X, Atlantis OG and Mini, TACHI, INCA, PARO, THORN and other LAMZU mice; WLmouse mice (Beast X Max and others), Attack Shark R5 Ultra |
 | Beken/Xenta 2.4G receiver | Attack Shark and other mice on 1d57:fa60 and fa55 |
 | ASUS | ROG Strix Go 2.4 and TUF Gaming H3 Wireless headsets; ROG Claymore II, Azoth, Azoth X, Azoth Extreme, Falchion, Falchion RX LP, Strix Scope II 96 and Scope RX TKL Wireless keyboards; ROG Gladius III, Gladius III AimPoint (and EVA-02), Chakram X, Harpe Ace, Harpe II Ace, Keris AimPoint, Keris II, Spatha X, TUF Gaming M4 and Mini, ProArt MD301, MD200 and mice on the ROG OMNI receiver |
@@ -141,10 +141,10 @@ Battery Hub reads these directly. Anything else can usually be added with **Set 
 | CHERRY | MX 3.0S Wireless |
 | 1EA7 2.4G receiver | Generic 2.4G mice on 1ea7:0064 and 0066 |
 | Rapoo | VT7 and VT9 Pro / VT3 MAX mice (24ae:1413, 1417), VT9 Pro V2, VT7 on its cable |
-| YICHIP 2.4G receiver | AJAZZ AJ159 APEX, AJ179 PRO, Lingbao M5 Pro, Attack Shark R2 and other mice and keyboards on YICHIP receivers |
+| YICHIP 2.4G receiver | AJAZZ AJ159 APEX, AJ179 PRO, Lingbao M5 Pro, Attack Shark R2 and other mice and keyboards on YICHIP and Rongyuan receivers (also MonsGeek, Epomaker, MSI, Trust and VGN ones) |
 | BY Tech | PIAO 8K, EWEADN S9 and other BY Tech mice |
 | Akko, Telink, Wobkey | Mice on the Akko 8K receiver, and Telink mice and Wobkey keyboards on the same platform |
-| VGN | Dragonfly 3 MasterGT and other VGN mice |
+| VGN | Dragonfly 3 MasterGT, Dragonfly Y2 / F1 V2, F1 V2 Extreme, Falcon3 Extreme and other VGN mice; N75 V2, V108, V87 V2, V98pro V3 keyboard dongles |
 | Keychron, SKN | Mice on the Ultra-Link 8K receiver |
 | YJX-chip 2.4G receiver | AJAZZ, XCTECH and other mice on YJX receivers (the same platform as MCHOSE G-series mice) |
 | Compx 2.4G receiver | AULA F87 Pro and F99 Pro, Lingbao K98, MCHOSE G75 keyboards |

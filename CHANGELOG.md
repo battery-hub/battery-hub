@@ -8,6 +8,10 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- From the makers' own web apps (read from their code, not yet confirmed on hardware): VGN's YJX, "ldMs", "king" and
+  Keychron-platform mice and its keyboard dongles; more MCHOSE mice, including the newer "0x4D" ones; ATK A9 PRO MAX and
+  Duckbill ELITE, more ATK NearLink devices; Rongyuan receivers under MonsGeek, MSI, Trust and VGN ids. Pulsar's
+  Fusion2 mice (Xlite V4, X3, Feinmann) are from pulsar-mouse-linux, tested on the mice.
 - Mice, each from a source that checked it on hardware: Pulsar 8K Dongle Gen.2 and CrazyLight, G-Wolves 8K receiver,
   Endgame Gear XM2we, iRocks M31R and Zebronics on the VXE frame; WLmouse and Attack Shark R5 Ultra; SteelSeries Aerox 3
   Wireless Gen 2, Rival 650 and Rival Pro; ASUS ROG/TUF mice from G-Helper's list; HyperX Pulsefire Haste 2 and Dart;
