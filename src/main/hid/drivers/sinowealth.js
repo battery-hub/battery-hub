@@ -25,12 +25,20 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const isWired = (d) => d.vendorId === GLORIOUS && GLORIOUS_MODELS.some(([wired]) => wired === d.productId);
 const isGlorious = (d) => d.vendorId === GLORIOUS && GLORIOUS_MODELS.some((pair) => pair.includes(d.productId));
 const hasLayout = (d) => d.channels.some((c) => c.usagePage === 0xffa0) && d.channels.some((c) => c.usagePage === 0xffff);
+// WLmouse (0x36A7) and the Attack Shark R5 Ultra (373e:0047) show only the 0xFFFF collection, with the
+// same exchange: HaloBattery checked a Beast X Max (00 a1 00 02 02 00 83 01 60 = 96 %, charging) and an
+// R5 Ultra (91 %); WLmouse's web hub reads all its mice this way, LAMZU's byte for byte.
+const FFFF_ONLY_VENDORS = new Set([0x36a7]);
+const FFFF_ONLY_PRODUCTS = new Set(['373e:0047']);
+const ffffOnly = (d) => FFFF_ONLY_VENDORS.has(d.vendorId)
+  || FFFF_ONLY_PRODUCTS.has(`${d.vendorId.toString(16)}:${d.productId.toString(16).padStart(4, '0')}`);
 // The 64-byte feature report lives on a 0xFFFF collection (mxw opens interface 2).
 const channelsOf = (d) => d.channels.filter((c) => c.usagePage === 0xffff || (isGlorious(d) && c.interface === 2))
   .sort((a, b) => (b.interface === 2) - (a.interface === 2));
 
 function matches(logicalDevice) {
   if (isGlorious(logicalDevice)) return channelsOf(logicalDevice).length > 0;
+  if (ffffOnly(logicalDevice)) return logicalDevice.channels.some((c) => c.usagePage === 0xffff);
   return LAYOUT_VENDORS.has(logicalDevice.vendorId) && hasLayout(logicalDevice);
 }
 

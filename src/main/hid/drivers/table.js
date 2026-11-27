@@ -260,6 +260,78 @@ function lofreeSteps() {
   ];
 }
 
+// The Nordic framing of Darmoshark's N5 and the OGM: every frame sums to 0xA1.
+function nordicRequest(type, last) {
+  return pad([0x00, type, 0x00, 0x81, 0x01], 64).concat([last]);
+}
+function nordicBattery(f) {
+  if (f.length < 64 || (f[0] & 0x3f) !== 0x01 || f[3] !== 0x01) return null;
+  if ((f.slice(0, 64).reduce((a, b) => a + b, 0) & 0xff) !== 0xa1) return null;
+  const level = f[6] === 0x15 && f[7] === 0x19 ? f[11] : f[6];
+  return level >= 1 && level <= 100 ? { capacity: level } : null;
+}
+
+function aerox3Gen2(opcode) {
+  return (f) => (f.length < 3 || f[0] !== opcode || f[2] === 0xff || f[2] > 100 ? null : f[2] === 0 ? OFFLINE : { capacity: f[2], charging: f[1] === 1 });
+}
+
+function vaxeeStep(command, parse) {
+  return {
+    via: 'feature', request: pad([0x0e, 0xa5, command, 0x01, 0x01], 64), reportId: 0x0e, length: 64, wait: 100, tries: 3,
+    parse: (f) => (f.length < 6 || f[0] !== 0x0e || f[1] !== 0xa5 || f[2] !== command ? null : parse(f[5])),
+  };
+}
+
+function ninjutsoStep(command, parse) {
+  return {
+    via: 'feature', request: pad([0x06, command, 0x00, 0x00, 0x01], 16), reportId: 0x06, length: 16, wait: 30, tries: 4,
+    parse: (f) => (f.length < 9 || f[0] !== 0x06 || f[1] !== command ? null : parse(f[8])),
+  };
+}
+
+let deluxSeq = 0;
+function deluxRequest() {
+  deluxSeq = (deluxSeq + 1) & 0xff;
+  return pad([0x0c, 0x01, 0x20, 0x00, deluxSeq], 33);
+}
+
+// ASUS ROG and TUF mice in G-Helper's lists (AsusMouse.cs, Models/*.cs) with a percent-level battery,
+// read like the Gladius III AimPoint: 12 07 on interface N, page 0xFF01 when Windows shows it, else
+// the interface's collection. Some take a 64-byte report (+ in G-Helper). [wireless, cable, name, iface, 64-byte cable]
+const ASUS_MICE = [
+  [0x1a1a, 0x1a18, 'ROG Chakram X', 0],
+  [0x197f, 0x197d, 'ROG Gladius III Wireless', 0],
+  [null, 0x1a70, 'ROG Gladius III AimPoint', 0],
+  [0x1b0c, 0x1b0a, 'ROG Gladius III AimPoint EVA-02', 0],
+  [0x1a94, 0x1a92, 'ROG Harpe Ace Aim Lab Edition', 0],
+  [null, 0x1b67, 'ROG Harpe Ace Extreme', 0],
+  [null, 0x1b63, 'ROG Harpe Ace Mini', 0, true],
+  [null, 0x1c69, 'ROG Harpe II Ace', 0, true],
+  [null, 0x1b16, 'ROG Keris II Ace', 0],
+  [null, 0x1c0c, 'ROG Keris II Origin', 0, true],
+  [null, 0x1d4c, 'ROG Keris II Origin', 0, true],
+  [0x1a68, 0x1a66, 'ROG Keris Wireless AimPoint', 0],
+  [0x1a24, null, 'ASUS MD200', 2],
+  [0x1cd3, 0x1cd5, 'ProArt MD301', 3],
+  [0x1979, 0x1977, 'ROG Spatha X', 0],
+  [0x19f4, null, 'TUF Gaming M4 Wireless', 0],
+  [0x1a8d, null, 'TX Gaming Mouse', 0],
+  [0x1af5, 0x1af3, 'TX Gaming Mouse Mini', 0],
+  [0x1c57, 0x1c56, 'TUF Gaming Mini Miku Edition', 0],
+];
+function asusMice() {
+  const entries = [];
+  for (const [wireless, cable, name, iface, short] of ASUS_MICE) {
+    const channel = [{ usagePage: 0xff01, interface: iface }, { interface: iface }];
+    if (wireless) entries.push({ name: `ASUS ${name}`, kind: 'mouse', vendorId: 0x0b05, productIds: [wireless], channel, steps: [{ request: pad([0x00, 0x12, 0x07], 65), parse: asusMouse }] });
+    if (cable) entries.push({ name: `ASUS ${name} (cable)`, kind: 'mouse', wired: true, vendorId: 0x0b05, productIds: [cable], channel, steps: [{ request: pad([0x00, 0x12, 0x07], short ? 64 : 65), parse: asusMouse }] });
+  }
+  // The Harpe II Ace's SPEEDNOVA 8K receiver takes it as report 3, like the OMNI receiver (HaloBattery:
+  // 03 12 07 00 00 35 02 14 fd 0e = 53 %).
+  entries.push({ name: 'ASUS ROG Harpe II Ace (receiver)', kind: 'mouse', vendorId: 0x0b05, productIds: [0x1ad0], channel: { usagePage: 0xff01 }, steps: [{ request: pad([0x03, 0x12, 0x07], 64), parse: asusMouse }] });
+  return entries;
+}
+
 const DEVICES = [
   // Headsets
   {
@@ -656,7 +728,8 @@ const DEVICES = [
     // Waizowl OGM 8K receiver (issue #169): the Nordic framing of Darmoshark's N5, whose frames all sum
     // to 0xA1; the frame the scan caught, 1f 00 81 01, does too. 41 00 81 01 asks for the base info;
     // the level is at byte 6, or at 11 when bytes 6-7 are 15 19.
-    name: 'Waizowl OGM 8K', kind: 'mouse', vendorId: 0x1915, productIds: [0x0728],
+    // 1915:0723 is the Darmoshark N5 receiver, the same frames (HaloBattery #430, 63 %).
+    name: 'Waizowl OGM 8K', kind: 'mouse', vendorId: 0x1915, productIds: [0x0728, 0x0723],
     channel: { usagePage: 0xff0a, usage: 0x01 },
     steps: [{
       request: [0,65,0,129,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,222],
@@ -1000,6 +1073,156 @@ const DEVICES = [
   },
 
   // Mice
+  {
+    // Zebronics' Compx receiver 3554:fc0a doesn't speak the VXE frame: it keeps the level in feature
+    // report 6, 06 00 02 00 <counter> <percent> 14 80 (TaskbarVitals zebronics.cpp, a local capture).
+    name: 'Zebronics receiver', kind: 'mouse', vendorId: 0x3554, productIds: [0xfc0a],
+    channel: { usagePage: 0xff02, usage: 0x02 },
+    steps: [{ via: 'feature', reportId: 0x06, length: 8, wait: 0, tries: 2, parse: (f) => (f.length < 6 || f[0] !== 0x06 || f[5] < 1 || f[5] > 100 ? null : { capacity: f[5] }) }],
+  },
+  {
+    // Darmoshark N5 on its cable (HaloBattery #430, 63 %): the receiver's 41 00 81 01 as 01 00 81 01,
+    // so the last byte is 0x1E to keep the frame's sum at 0xA1 (the receiver 1915:0723 is on the OGM entry).
+    name: 'Darmoshark N5 (cable)', kind: 'mouse', wired: true, vendorId: 0x1915, productIds: [0x073c],
+    channel: { usagePage: 0xff0a, usage: 0x01 },
+    steps: [{ request: nordicRequest(0x01, 0x1e), parse: nordicBattery }],
+  },
+  {
+    // SteelSeries Aerox 3 Wireless Gen 2 (rivalcfg branch device_aerox3_wireless_gen2; the #276 owner's
+    // traces D2 00 61 00 = 97 %, 92 01 64 00): plain percent at byte 2, charging at 1, 0xFF = not known yet.
+    name: 'SteelSeries Aerox 3 Wireless Gen 2', kind: 'mouse', vendorId: STEELSERIES, productIds: [0x1890],
+    channel: { interface: 3 },
+    steps: [{ request: [0x00, 0xd2], parse: aerox3Gen2(0xd2) }],
+  },
+  {
+    name: 'SteelSeries Aerox 3 Wireless Gen 2 (cable)', kind: 'mouse', wired: true, vendorId: STEELSERIES, productIds: [0x1892],
+    channel: { interface: 3 },
+    steps: [{ request: [0x00, 0x92], parse: aerox3Gen2(0x92) }],
+  },
+  {
+    // Rival 650 Wireless (rivalcfg rival650.py): the Rival 3 Wireless's request, on interface 0.
+    name: 'SteelSeries Rival 650 Wireless', kind: 'mouse', vendorId: STEELSERIES, productIds: [0x1726, 0x172b],
+    channel: { interface: 0 },
+    steps: [{ request: [0x00, 0xaa, 0x01], parse: (f) => (f.length < 3 ? null : f[0] === 0 || f[0] > 100 ? OFFLINE : { capacity: f[0], charging: !!f[2] }) }],
+  },
+  {
+    // Rival Pro (rivalcfg PR #294, captured from GG and tested by its author): 92 00 <mouse %> ...
+    name: 'SteelSeries Rival Pro', kind: 'mouse', vendorId: STEELSERIES, productIds: [0x1880],
+    channel: { interface: 2 },
+    steps: [{ request: [0x00, 0x92], parse: (f) => (f.length < 3 || f[0] !== 0x92 || f[2] < 1 || f[2] > 100 ? null : { capacity: f[2] }) }],
+  },
+  ...asusMice(),
+  {
+    // HyperX Pulsefire Haste 2 Wireless and Haste 2 Core Wireless (NGENUITY's protocol; fuyue521's notes,
+    // level = NGENUITY on 0ab5 and 0f98; HaloBattery hyperx_ngenuity.py): the Cloud Alpha 2's two steps
+    // on 0xFF00/0x0001.
+    name: 'HyperX Pulsefire Haste 2 Wireless', kind: 'mouse', vendorId: HP, productIds: [0x0f98, 0x0d97, 0x0ab5],
+    channel: { usagePage: 0xff00, usage: 0x01 },
+    steps: hyperxAlpha2Steps(),
+  },
+  {
+    // HyperX Pulsefire Dart (santeri3700's reverse engineering, from captures): the heartbeat 00 51,
+    // answered 51 00 00 03 <percent> <charging 1 / full 2>. 16e1 is the dongle, 16e2 the cable.
+    name: 'HyperX Pulsefire Dart', kind: 'mouse', vendorId: KINGSTON, productIds: [0x16e1, 0x16e2],
+    channel: [{ usagePage: 0xff00 }, { usagePage: 0xff13 }],
+    steps: [{
+      request: pad([0x00, 0x51], 65),
+      parse: (f) => (f.length < 6 || f[0] !== 0x51 || f[4] < 1 || f[4] > 100 ? null : { capacity: f[4], charging: f[5] === 1 }),
+    }],
+  },
+  {
+    // MSI VERSA PRO WIRELESS (HaloBattery msi.py parse_pro_reply, tested by its reporter): 00 0D B0 01 .. 05
+    // on 0x00FF/0x0001; reply byte 6 = 05, level at 8, 9 = 01 on external power.
+    name: 'MSI VERSA PRO Wireless', kind: 'mouse', vendorId: 0x0db0, productIds: [0x1fc6],
+    channel: { usagePage: 0x00ff, usage: 0x01 },
+    steps: [{
+      request: pad([0x00, 0x0d, 0xb0, 0x01, 0x00, 0x00, 0x00, 0x05], 65),
+      parse: (f) => (f.length < 10 || f[6] !== 0x05 || f[8] < 1 || f[8] > 100 ? null : { capacity: f[8], charging: f[9] === 0x01 }),
+    }],
+  },
+  {
+    // NZXT Lift Elite Wireless (HaloBattery nzxt.py, a USBPcap of CAM, #148; both links confirmed):
+    // 4E 02 81 00 B0, reply 4E 02 97 ...: level 16-bit at 17-18, charging bit 0 of byte 22. Silent while
+    // NZXT CAM is open.
+    name: 'NZXT Lift Elite Wireless', kind: 'mouse', vendorId: 0x1e71, productIds: [0x2101, 0x2129],
+    channel: { usagePage: 0xffca, usage: 0x01 },
+    steps: [{
+      request: pad([0x4e, 0x02, 0x81, 0x00, 0xb0], 64),
+      parse(f) {
+        if (f.length < 27 || f[0] !== 0x4e || f[1] !== 0x02 || f[2] !== 0x97) return null;
+        const level = f[17] | (f[18] << 8);
+        return level >= 1 && level <= 100 ? { capacity: level, charging: !!(f[22] & 1) } : null;
+      },
+    }],
+  },
+  {
+    // Cooler Master MM712 (checked by HaloBattery) and MM731 on their shared receiver 01b7 or cables
+    // (syntactic-spice/coolermaster-usb-protocol, riVFerd/MM731-Controller): 46 81, reply 47 81 <model>
+    // ... level at 10, charging at 11.
+    name: 'Cooler Master MM712, MM731', kind: 'mouse', vendorId: 0x2516, productIds: [0x01b7, 0x0169, 0x0167],
+    channel: { usagePage: 0xff0a, interface: 3 },
+    steps: [{
+      request: [0x00, 0x46, 0x81, 0x00],
+      parse: (f) => (f.length < 12 || f[0] !== 0x47 || f[1] !== 0x81 || f[10] < 1 || f[10] > 100 ? null : { capacity: f[10], charging: !!f[11] }),
+    }],
+  },
+  {
+    // VAXEE wireless dongles (ryanlewis/mousebatt protocol.rs, stuffz/mouse-battery-monitor; HaloBattery
+    // vaxee.py on an E1 Wireless): feature report 0E A5 0B 01 01 -> value at 5 in 5 % steps; 0x10 = charging.
+    name: 'VAXEE wireless', kind: 'mouse', vendorId: 0x3057, productIds: [0x1001, 0x1002, 0x2001, 0x2002],
+    channel: { usagePage: 0xff05 },
+    steps: [vaxeeStep(0x0b, (v) => (v >= 1 && v <= 20 ? { capacity: v * 5 } : null)), vaxeeStep(0x10, (v) => ({ charging: v !== 0 }))],
+  },
+  {
+    // CROCIRIS X7 receiver (TaskbarVitals crociris.cpp, from the vendor's WebHID hub; 97 % on hardware):
+    // AA 12, reply 55 12 <len> 00 <charging> <percent> <full> <link>; link low nibble 1 = linked.
+    name: 'CROCIRIS X7', kind: 'mouse', vendorId: 0x36f9, productIds: [0xaa20],
+    channel: { usagePage: 0xff0a, usage: 0x01 },
+    steps: [{
+      request: pad([0x00, 0xaa, 0x12, 0x00, 0x00], 65),
+      parse: (f) => (f.length < 8 || f[0] !== 0x55 || f[1] !== 0x12 ? null
+        : (f[7] & 0x0f) !== 1 || f[5] === 0 ? OFFLINE : f[5] > 100 ? null : { capacity: f[5], charging: !!f[4] }),
+    }],
+  },
+  {
+    // DARKRIM SHADOW (TaskbarVitals docs/darkrim.md, from DARKRIM's app and hardware): a fixed request
+    // with its CRC, reply FE 03 10 00 02 .. <b> at byte 11: low 7 bits percent, top bit charging.
+    name: 'DARKRIM SHADOW', kind: 'mouse', vendorId: 0x3654, productIds: [0x6901],
+    channel: { usagePage: 0xff02, usage: 0x02, interface: 3 },
+    steps: [{
+      request: pad([0x00, 0xfe, 0x03, 0x10, 0x00, 0x01, 0x00, 0x01, 0x02, 0x00, 0x01, 0x00, 0x9b, 0x15], 65),
+      parse: (f) => (f.length < 12 || f[0] !== 0xfe || f[1] !== 0x03 || f[2] !== 0x10 || f[4] !== 0x02 || (f[11] & 0x7f) < 1 || (f[11] & 0x7f) > 100 ? null
+        : { capacity: f[11] & 0x7f, charging: !!(f[11] & 0x80) }),
+    }],
+  },
+  {
+    // Ninjutso Sora V3 (OpenMouse's ninjutso codecs; HaloBattery: both links matched NinjaForce):
+    // feature report 6, 16 bytes; 06 12 = level, 06 11 = charging; the value at byte 8.
+    name: 'Ninjutso Sora V3', kind: 'mouse', vendorId: 0x093a, productIds: [0xeb02, 0xe010],
+    channel: { usagePage: 0xff01 },
+    steps: [ninjutsoStep(0x12, (v) => (v >= 1 && v <= 100 ? { capacity: v } : null)), ninjutsoStep(0x11, (v) => ({ charging: v === 1 }))],
+  },
+  {
+    // Delux M800 Pro / Kmart wireless mouse receiver and cable (fuyue521 misc_mice.cpp; OpenMouse's kmart,
+    // confirmed on 5b2f): feature report 0C 01 20 00 <sequence> (the sequence must change), level at 18,
+    // state at 19 (1 charging, 2 full).
+    name: 'Delux M800 Pro', kind: 'mouse', vendorId: 0x248a, productIds: [0x5b2f, 0x5b2e],
+    channel: { usagePage: 0xff00, usage: 0x01 },
+    steps: [{
+      via: 'feature', request: deluxRequest, reportId: 0x0c, length: 33, wait: 50, tries: 4,
+      parse: (f) => (f.length < 20 || f[0] !== 0x0c || f[18] < 1 || f[18] > 100 ? null : { capacity: f[18], charging: f[19] === 1 }),
+    }],
+  },
+  {
+    // Redragon M690 PRO receiver (OpenMouse redragon, verified on firmware 2.95/2.97; BrimDeck): feature
+    // report 5, 8 bytes. 05 80 asks if the mouse is linked, 05 90 for the status: 05 90 11 <percent>.
+    name: 'Redragon M690 PRO', kind: 'mouse', vendorId: 0x258a, productIds: [0x002f],
+    channel: { usagePage: 0xff00, usage: 0x01, interface: 1 },
+    steps: [
+      { via: 'feature', request: pad([0x05, 0x80], 8), reportId: 0x05, length: 8, wait: 30, tries: 3, parse: (f) => (f[0] !== 0x05 || f[1] !== 0x80 ? null : f[2] === 1 ? {} : OFFLINE) },
+      { via: 'feature', request: pad([0x05, 0x90], 8), reportId: 0x05, length: 8, wait: 30, tries: 3, parse: (f) => (f[0] !== 0x05 || f[1] !== 0x90 || f[2] !== 0x11 || f[3] < 1 || f[3] > 100 ? null : { capacity: f[3] }) },
+    ],
+  },
   {
     name: 'SteelSeries Rival 3 Wireless', kind: 'mouse', vendorId: STEELSERIES, productIds: [0x1830, 0x1872],
     channel: { interface: 3 },

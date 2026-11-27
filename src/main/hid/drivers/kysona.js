@@ -40,11 +40,22 @@ const hasCompxLayout = (logicalDevice) => hasCollection(logicalDevice, 0xff02, 0
 const VGN = 0x391d;
 const VGN_COMPX_PIDS = new Set([0x1005, 0x1a05, 0x101d, 0x1a1a, 0x1032, 0x102d, 0x1034, 0x1a2f, 0x1035, 0x1a30, 0x1036, 0x1a31, 0x1038, 0x1a32, 0x1039, 0x1a33]);
 
+// Other brands on the same frame, by exact id (each of these vendor ids also has products that speak
+// something else), on 0xFF02/0x0002:
+//   Pulsar 8K Dongle Gen.2 and CrazyLight cables (HaloBattery #164 and its Gen.2 notes; pulsar-mouse-linux,
+//     tested on the mice): 3710:5406, 3414, 3510, 3527, 5504, 7507
+//   G-Wolves shared 8K receiver 33e4:3854 (HaloBattery #297: 80 %, 4013 mV)
+//   Endgame Gear XM2we 3367:1961 and iRocks M31R 14a5:c009 / c010: the Redragon split, feature 8 in and
+//     report 9 on 0xFF01 out (okms/xm2we-linux PROTOCOL.md; HaloBattery: 90 % = the official tool, #309)
+const OTHER_BRANDS = new Set(['3710:5406', '3710:3414', '3710:3510', '3710:3527', '3710:5504', '3710:7507', '33e4:3854', '3367:1961', '14a5:c009', '14a5:c010']);
+const idOf = (d) => `${d.vendorId.toString(16).padStart(4, '0')}:${d.productId.toString(16).padStart(4, '0')}`;
+
 function matches(logicalDevice) {
   if (compx.matches(logicalDevice)) return false;
   // A device the table describes with its own frame (Lofree's keyboard flag, Zebronics) is left to it.
   if (table.find(logicalDevice)) return false;
   if (logicalDevice.vendorId === VGN) return VGN_COMPX_PIDS.has(logicalDevice.productId) && hasCollection(logicalDevice, 0xff02, 0x0002);
+  if (OTHER_BRANDS.has(idOf(logicalDevice))) return hasCollection(logicalDevice, 0xff02, 0x0002);
   if (KNOWN_VENDOR_IDS.has(logicalDevice.vendorId)) return !!findChannel(logicalDevice, USAGE_PAGE_COMMAND);
   return COMPX_CHIP_VENDOR_IDS.has(logicalDevice.vendorId) && hasCompxLayout(logicalDevice);
 }

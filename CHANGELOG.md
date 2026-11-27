@@ -8,6 +8,11 @@ All notable changes to this project are documented here. Versions follow
 
 ### Added
 
+- Mice, each from a source that checked it on hardware: Pulsar 8K Dongle Gen.2 and CrazyLight, G-Wolves 8K receiver,
+  Endgame Gear XM2we, iRocks M31R and Zebronics on the VXE frame; WLmouse and Attack Shark R5 Ultra; SteelSeries Aerox 3
+  Wireless Gen 2, Rival 650 and Rival Pro; ASUS ROG/TUF mice from G-Helper's list; HyperX Pulsefire Haste 2 and Dart;
+  MSI VERSA PRO; NZXT Lift Elite; Cooler Master MM712/MM731; VAXEE; Ninjutso Sora V3; CROCIRIS X7; DARKRIM SHADOW;
+  Delux M800 Pro; Redragon M690 PRO; Darmoshark N5; Rapoo VT9 Pro V2 and the VT7 cable.
 - Keyboards: ASUS ROG Azoth, Azoth X/Extreme, Falchion, Falchion RX LP, Strix Scope II 96 and Scope RX TKL Wireless
   (G-Helper); MCHOSE K87 and G98 Pro; Lofree Flow Lite84; GANSS GS3075T; Alienware Pro Wireless; Red Square Alumix
   TKL; CHERRY MX 3.0S Wireless; SteelSeries Apex Pro TKL Wireless and Apex Pro Mini Wireless; Razer BlackWidow V4
