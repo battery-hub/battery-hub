@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-0078D6" alt="Platform: Windows 10/11" />
 
   <p><a href="https://buymeacoffee.com/batteryhub"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000" height="34" alt="Buy me a coffee" /></a></p>
+  <p><strong>English</strong> | <a href="README.ru.md">Русский</a></p>
 </div>
 
 ---
