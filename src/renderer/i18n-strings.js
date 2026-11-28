@@ -4,6 +4,22 @@
 // English. Loaded as a plain script in the windows and required in Node, like estimate.js.
 const BH_STRINGS = {
   ru: {
+    "Your reports": "Ваши отчёты",
+    "Reports sent from here without a GitHub account, with the replies to them.": "Отчёты, отправленные отсюда без аккаунта GitHub, и ответы на них.",
+    "No GitHub account? Send it from here instead: the replies show up in Settings → Help → Your reports, and you can answer them there.": "Нет аккаунта GitHub? Отправьте отчёт отсюда. Ответы появятся в разделе «Настройки → Помощь → Ваши отчёты», где вы сможете ответить.",
+    "Send without a GitHub account": "Отправить без аккаунта GitHub",
+    "Sending…": "Отправка…",
+    "Sent": "Отправлено",
+    "What went wrong? (for sending without an account)": "Что пошло не так? (для отправки без аккаунта)",
+    "Send on GitHub": "Отправить на GitHub",
+    "Answer here": "Введите ответ",
+    "Send answer": "Отправить ответ",
+    "Open on GitHub": "Открыть на GitHub",
+    "The replies couldn't be loaded right now.": "Не удалось загрузить ответы.",
+    "No replies yet. You will get a notification when there is one.": "Ответов пока нет. Когда появится ответ, вы получите уведомление.",
+    "You": "Вы",
+    "No reports sent from here yet.": "Отчёты отсюда ещё не отправлялись.",
+    "New reply to your report": "Новый ответ на ваш отчёт",
     "Left": "Левый",
     "Right": "Правый",
     "Case": "Кейс",
