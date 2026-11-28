@@ -64,3 +64,23 @@ test('a Bluetooth LE battery read joins the same device seen as HID', () => {
   assert.equal(identityOf({ id: 'ble:D228599C0140' }), 'mac:d228599c0140');
   assert.equal(identityOf({ id: 'bt:BTHLE\Dev_d228599c0140\8&1420c792&0&d228599c0140' }), 'mac:d228599c0140');
 });
+
+test('CHERRY EVision wireless keyboards check link with 0xAA and read battery with 0x9A on 0xFF1C/0x0092', () => {
+  const cherry = require('../src/main/hid/drivers/cherry');
+  assert.equal(detectDriver({ vendorId: 0x046a, productId: 0x0144, channels: [ch(1, 6), ch(0xff1c, 0x92)] }).id, 'cherry');
+  assert.equal(detectDriver({ vendorId: 0x046a, productId: 0x00ea, channels: [ch(1, 6), ch(0xff1c, 0x92)] }).id, 'akko');
+  assert.equal(detectDriver({ vendorId: 0x38ee, productId: 0x0024, channels: [ch(1, 2), ch(0xff1c, 0x92)] }).id, 'akko');
+  assert.equal(cherry.ONLINE_REQUEST.length, 64);
+  assert.deepEqual(cherry.ONLINE_REQUEST.slice(0, 4), [0x04, 0xaa, 0x00, 0xaa]);
+  assert.equal(cherry.BATTERY_9A_REQUEST.length, 64);
+  assert.deepEqual(cherry.BATTERY_9A_REQUEST.slice(0, 5), [0x04, 0xa0, 0x00, 0x9a, 0x06]);
+  assert.deepEqual(cherry.parseOnline([0x04, 0xaa, 0x00, 0xaa, 0, 0, 0, 0x00, 0xff]), { online: true });
+  assert.deepEqual(cherry.parseOnline([0x04, 0xaa, 0x00, 0xaa, 0, 0, 0, 0x00, 0x00]), { online: false });
+  assert.equal(cherry.parseOnline([0x04, 0xaa, 0x00, 0x9a, 0, 0, 0, 0x00, 0xff]), null);
+  const parse9a = cherry.parseBattery(0x9a);
+  assert.deepEqual(parse9a([0x04, 0xa0, 0x00, 0x9a, 0x06, 0, 0, 0x00, 0x31, 0x00]), { capacity: 49, charging: false });
+  assert.deepEqual(parse9a([0x04, 0xa0, 0x00, 0x9a, 0x06, 0, 0, 0x00, 82, 0x01]), { capacity: 82, charging: true });
+  assert.equal(parse9a([0x04, 0xa0, 0x00, 0x9a, 0x06, 0, 0, 0xff, 0x00, 0x00]).unsupported, true);
+  assert.equal(parse9a([0x04, 0xa0, 0x00, 0x9a, 0x06, 0, 0, 0x00, 0x00, 0x00]).offline, true);
+  assert.equal(parse9a([0x04, 0xa0, 0x00, 0x1a, 0x06, 0, 0, 0x00, 49, 0x00]), null);
+});
