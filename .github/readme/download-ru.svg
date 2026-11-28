@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="44" viewBox="0 0 250 44" role="img" aria-label="Скачать для Windows">
+  <rect width="250" height="44" rx="9" fill="#2FD5A0"/>
+  <g transform="translate(22 13)" fill="none" stroke="#011C28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 0v11M4.5 7 9 11.5 13.5 7M1 15.5v1.5a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5v-1.5"/>
+  </g>
+  <text x="137" y="28" text-anchor="middle" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Noto Sans', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#011C28">Скачать для Windows</text>
+</svg>

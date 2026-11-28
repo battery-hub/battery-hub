@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="44" viewBox="0 0 250 44" role="img" aria-label="请我喝杯咖啡">
+  <rect width="250" height="44" rx="9" fill="#FFDD00"/>
+  <g transform="translate(20 12)" fill="none" stroke="#000000" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1 7h13v5.5a5.5 5.5 0 0 1-5.5 5.5h-2A5.5 5.5 0 0 1 1 12.5zM14 9h1.5a3 3 0 0 1 0 6H14M5 0.5v3M10 0.5v3"/>
+  </g>
+  <text x="137" y="28" text-anchor="middle" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Noto Sans', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#000000">请我喝杯咖啡</text>
+</svg>
